@@ -1,0 +1,223 @@
+brand_name,type_name
+LG,Air Conditioner
+LG,Refrigerator
+LG,Washing Machine
+LG,Television
+LG,Microwave
+LG,Water Purifier
+Samsung,Air Conditioner
+Samsung,Refrigerator
+Samsung,Washing Machine
+Samsung,Television
+Samsung,Microwave
+Samsung,Smartphone
+Samsung,Laptop
+Samsung,Tablet
+Samsung,Monitor
+Samsung,Smartwatch
+Sony,Television
+Sony,Smartphone
+Sony,Laptop
+Sony,Headphones
+Sony,Camera
+Sony,Gaming Console
+Whirlpool,Refrigerator
+Whirlpool,Washing Machine
+Whirlpool,Microwave
+Whirlpool,Air Conditioner
+Whirlpool,Water Purifier
+Voltas,Air Conditioner
+Voltas,Water Cooler
+Daikin,Air Conditioner
+Blue Star,Air Conditioner
+Blue Star,Water Cooler
+Blue Star,Refrigerator
+Hitachi,Air Conditioner
+Hitachi,Refrigerator
+Carrier,Air Conditioner
+Panasonic,Air Conditioner
+Panasonic,Refrigerator
+Panasonic,Washing Machine
+Panasonic,Microwave
+Panasonic,Television
+Godrej,Refrigerator
+Godrej,Washing Machine
+Godrej,Air Conditioner
+Haier,Refrigerator
+Haier,Washing Machine
+Haier,Air Conditioner
+Haier,Television
+Bosch,Washing Machine
+Bosch,Refrigerator
+Bosch,Dishwasher
+Bosch,Microwave
+Siemens,Washing Machine
+Siemens,Refrigerator
+Siemens,Dishwasher
+Videocon,Refrigerator
+Videocon,Washing Machine
+Videocon,Air Conditioner
+Videocon,Television
+Kelvinator,Refrigerator
+Kelvinator,Air Conditioner
+IFB,Washing Machine
+IFB,Microwave
+IFB,Dishwasher
+Morphy Richards,Microwave
+Morphy Richards,Toaster
+Morphy Richards,Kettle
+Morphy Richards,Iron
+Bajaj,Microwave
+Bajaj,Mixer Grinder
+Bajaj,Water Heater
+Bajaj,Iron
+Bajaj,Fan
+Prestige,Pressure Cooker
+Prestige,Mixer Grinder
+Prestige,Induction Cooktop
+Kaff,Chimney
+Kaff,Hob
+Kaff,Oven
+Kaff,Dishwasher
+Kent,Water Purifier
+Aquaguard,Water Purifier
+Pureit,Water Purifier
+Livpure,Water Purifier
+Havells,Water Purifier
+Havells,Water Heater
+Havells,Fan
+Havells,Lighting
+AO Smith,Water Purifier
+AO Smith,Water Heater
+Eureka Forbes,Water Purifier
+Eureka Forbes,Vacuum Cleaner
+Tata Swach,Water Purifier
+HUL,Water Purifier
+Racold,Water Heater
+Venus,Water Heater
+V-Guard,Water Heater
+V-Guard,Stabilizer
+V-Guard,Inverter
+V-Guard,Pump
+Crompton,Water Heater
+Crompton,Fan
+Crompton,Pump
+Crompton,Lighting
+Usha,Water Heater
+Usha,Fan
+Usha,Sewing Machine
+Usha,Mixer Grinder
+Orient,Water Heater
+Orient,Fan
+Orient,Air Cooler
+Kenstar,Water Heater
+Kenstar,Air Cooler
+Kenstar,Fan
+Dell,Laptop
+Dell,Monitor
+Dell,Desktop
+HP,Laptop
+HP,Monitor
+HP,Desktop
+HP,Printer
+Lenovo,Laptop
+Lenovo,Monitor
+Lenovo,Tablet
+Lenovo,Desktop
+ASUS,Laptop
+ASUS,Monitor
+ASUS,Motherboard
+ASUS,Graphics Card
+ASUS,Phone
+Acer,Laptop
+Acer,Monitor
+Acer,Desktop
+Apple,Smartphone
+Apple,Laptop
+Apple,Tablet
+Apple,Smartwatch
+Apple,Desktop
+Apple,Headphones
+MSI,Laptop
+MSI,Monitor
+MSI,Motherboard
+MSI,Graphics Card
+Microsoft,Laptop
+Microsoft,Tablet
+Microsoft,Gaming Console
+Razer,Laptop
+Razer,Mouse
+Razer,Keyboard
+Razer,Headset
+Xiaomi,Smartphone
+Xiaomi,Smartwatch
+Xiaomi,TV
+Xiaomi,Vacuum Cleaner
+Xiaomi,Air Purifier
+OnePlus,Smartphone
+OnePlus,Smartwatch
+OnePlus,TV
+OnePlus,Headphones
+Oppo,Smartphone
+Oppo,Smartwatch
+Oppo,Headphones
+Vivo,Smartphone
+Vivo,Smartwatch
+Realme,Smartphone
+Realme,Smartwatch
+Realme,Headphones
+Realme,TV
+Motorola,Smartphone
+Google,Smartphone
+Google,Smartwatch
+Google,Tablet
+Google,Laptop
+Google,Smart Home
+Nothing,Smartphone
+Nothing,Headphones
+TCL,Television
+TCL,Air Conditioner
+Hisense,Television
+Hisense,Refrigerator
+Hisense,Air Conditioner
+Philips,Television
+Philips,Monitor
+Philips,Electric Shaver
+Philips,Air Purifier
+Philips,Lighting
+Sharp,Television
+Sharp,Microwave
+Sharp,Air Purifier
+Toshiba,Television
+Toshiba,Laptop
+Toshiba,Microwave
+Fujitsu,Air Conditioner
+Fujitsu,Laptop
+Fujitsu,Scanner
+ViewSonic,Monitor
+ViewSonic,Projector
+BenQ,Monitor
+BenQ,Projector
+AOC,Monitor
+Gigabyte,Monitor
+Gigabyte,Motherboard
+Gigabyte,Graphics Card
+Gigabyte,Laptop
+Luminous,Inverter
+Luminous,Battery
+Luminous,Solar
+Microtek,Inverter
+Microtek,Battery
+Microtek,Solar
+Exide,Battery
+Exide,Inverter
+Amaron,Battery
+Su-Kam,Inverter
+Su-Kam,Battery
+Genus,Inverter
+Genus,Battery
+Okaya,Battery
+Okaya,Inverter
+Base,Battery
+Livguard,Battery
+Livguard,Inverter

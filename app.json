@@ -19,6 +19,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Snap It needs access to your photos to attach service photos.",
+          "cameraPermission": "Snap It needs camera access to take device photos."
+        }
+      ],
+      "expo-barcode-scanner"
+    ]
   }
 }

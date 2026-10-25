@@ -1,6 +1,7 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -36,7 +37,7 @@
     }
   ],
   "env": {
-    "EXPO_PUBLIC_SUPABASE_URL": "@supabase_url",
-    "EXPO_PUBLIC_SUPABASE_ANON_KEY": "@supabase_anon_key"
+    "EXPO_PUBLIC_SUPABASE_URL": "EXPO_PUBLIC_SUPABASE_URL",
+    "EXPO_PUBLIC_SUPABASE_ANON_KEY": "EXPO_PUBLIC_SUPABASE_ANON_KEY"
   }
 }

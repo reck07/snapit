@@ -21,7 +21,6 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite",
       [
         "expo-image-picker",
         {
@@ -29,7 +28,7 @@
           "cameraPermission": "Snap It needs camera access to take device photos."
         }
       ],
-      "expo-barcode-scanner"
+      "expo-font"
     ]
   }
 }

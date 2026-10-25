@@ -14,7 +14,7 @@ export async function uriToPersistable(uri) {
       reader.onerror = () => reject(new Error('Could not read photo'));
       reader.readAsDataURL(blob);
     });
-  } catch (e) {
+  } catch {
     return null;
   }
 }

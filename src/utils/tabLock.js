@@ -13,7 +13,7 @@ export function useTabLock() {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
     const id = Math.random().toString(36).slice(2);
-    let timer;
+    let timer = null;
 
     const tryAcquire = () => {
       const owner = localStorage.getItem(LOCK_KEY);
@@ -33,7 +33,7 @@ export function useTabLock() {
 
     // Initial attempt
     tryAcquire();
-    
+
     // Periodic check
     timer = setInterval(tryAcquire, 1000);
     window.addEventListener('focus', tryAcquire);

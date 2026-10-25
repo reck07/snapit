@@ -7,7 +7,18 @@ export const DEVICE_CATEGORIES = [
     id: 'ac',
     name: 'Air Conditioner',
     icon: '❄️',
-    commonBrands: ['Voltas', 'LG', 'Samsung', 'Daikin', 'Blue Star', 'Hitachi', 'Carrier', 'Panasonic', 'Godrej', 'Whirlpool'],
+    commonBrands: [
+      'Voltas',
+      'LG',
+      'Samsung',
+      'Daikin',
+      'Blue Star',
+      'Hitachi',
+      'Carrier',
+      'Panasonic',
+      'Godrej',
+      'Whirlpool',
+    ],
     defaultWarrantyMonths: 12,
     serviceIntervalMonths: 6, // typical AC service interval
   },
@@ -15,7 +26,18 @@ export const DEVICE_CATEGORIES = [
     id: 'fridge',
     name: 'Refrigerator',
     icon: '🧊',
-    commonBrands: ['LG', 'Samsung', 'Whirlpool', 'Godrej', 'Haier', 'Bosch', 'Siemens', 'Panasonic', 'Videocon', 'Kelvinator'],
+    commonBrands: [
+      'LG',
+      'Samsung',
+      'Whirlpool',
+      'Godrej',
+      'Haier',
+      'Bosch',
+      'Siemens',
+      'Panasonic',
+      'Videocon',
+      'Kelvinator',
+    ],
     defaultWarrantyMonths: 12,
     serviceIntervalMonths: 12,
   },
@@ -23,7 +45,18 @@ export const DEVICE_CATEGORIES = [
     id: 'washing_machine',
     name: 'Washing Machine',
     icon: '🧺',
-    commonBrands: ['LG', 'Samsung', 'Whirlpool', 'IFB', 'Bosch', 'Godrej', 'Haier', 'Panasonic', 'Onida', 'Videocon'],
+    commonBrands: [
+      'LG',
+      'Samsung',
+      'Whirlpool',
+      'IFB',
+      'Bosch',
+      'Godrej',
+      'Haier',
+      'Panasonic',
+      'Onida',
+      'Videocon',
+    ],
     defaultWarrantyMonths: 24,
     serviceIntervalMonths: 12,
   },
@@ -31,7 +64,18 @@ export const DEVICE_CATEGORIES = [
     id: 'tv',
     name: 'Television',
     icon: '📺',
-    commonBrands: ['Samsung', 'LG', 'Sony', 'TCL', 'Xiaomi', 'OnePlus', 'VU', 'Panasonic', 'Philips', 'Hisense'],
+    commonBrands: [
+      'Samsung',
+      'LG',
+      'Sony',
+      'TCL',
+      'Xiaomi',
+      'OnePlus',
+      'VU',
+      'Panasonic',
+      'Philips',
+      'Hisense',
+    ],
     defaultWarrantyMonths: 12,
     serviceIntervalMonths: 0,
   },
@@ -39,7 +83,18 @@ export const DEVICE_CATEGORIES = [
     id: 'microwave',
     name: 'Microwave Oven',
     icon: '🍳',
-    commonBrands: ['LG', 'Samsung', 'IFB', 'Whirlpool', 'Godrej', 'Panasonic', 'Morphy Richards', 'Bajaj', 'Prestige', 'Kaff'],
+    commonBrands: [
+      'LG',
+      'Samsung',
+      'IFB',
+      'Whirlpool',
+      'Godrej',
+      'Panasonic',
+      'Morphy Richards',
+      'Bajaj',
+      'Prestige',
+      'Kaff',
+    ],
     defaultWarrantyMonths: 12,
     serviceIntervalMonths: 0,
   },
@@ -47,7 +102,18 @@ export const DEVICE_CATEGORIES = [
     id: 'water_purifier',
     name: 'Water Purifier',
     icon: '💧',
-    commonBrands: ['Kent', 'Aquaguard', 'Pureit', 'Livpure', 'Blue Star', 'Havells', 'AO Smith', 'Eureka Forbes', 'Tata Swach', 'HUL'],
+    commonBrands: [
+      'Kent',
+      'Aquaguard',
+      'Pureit',
+      'Livpure',
+      'Blue Star',
+      'Havells',
+      'AO Smith',
+      'Eureka Forbes',
+      'Tata Swach',
+      'HUL',
+    ],
     defaultWarrantyMonths: 12,
     serviceIntervalMonths: 6, // filter changes
   },
@@ -55,7 +121,18 @@ export const DEVICE_CATEGORIES = [
     id: 'geyser',
     name: 'Water Heater / Geyser',
     icon: '♨️',
-    commonBrands: ['Racold', 'Bajaj', 'Havells', 'AO Smith', 'Venus', 'V-Guard', 'Crompton', 'Usha', 'Orient', 'Kenstar'],
+    commonBrands: [
+      'Racold',
+      'Bajaj',
+      'Havells',
+      'AO Smith',
+      'Venus',
+      'V-Guard',
+      'Crompton',
+      'Usha',
+      'Orient',
+      'Kenstar',
+    ],
     defaultWarrantyMonths: 24,
     serviceIntervalMonths: 12,
   },
@@ -63,7 +140,18 @@ export const DEVICE_CATEGORIES = [
     id: 'laptop',
     name: 'Laptop',
     icon: '💻',
-    commonBrands: ['Dell', 'HP', 'Lenovo', 'ASUS', 'Acer', 'Apple', 'MSI', 'Microsoft', 'Razer', 'Samsung'],
+    commonBrands: [
+      'Dell',
+      'HP',
+      'Lenovo',
+      'ASUS',
+      'Acer',
+      'Apple',
+      'MSI',
+      'Microsoft',
+      'Razer',
+      'Samsung',
+    ],
     defaultWarrantyMonths: 12,
     serviceIntervalMonths: 0,
   },
@@ -71,7 +159,18 @@ export const DEVICE_CATEGORIES = [
     id: 'smartphone',
     name: 'Smartphone',
     icon: '📱',
-    commonBrands: ['Apple', 'Samsung', 'Xiaomi', 'OnePlus', 'Vivo', 'Oppo', 'Realme', 'Motorola', 'Google', 'Nothing'],
+    commonBrands: [
+      'Apple',
+      'Samsung',
+      'Xiaomi',
+      'OnePlus',
+      'Vivo',
+      'Oppo',
+      'Realme',
+      'Motorola',
+      'Google',
+      'Nothing',
+    ],
     defaultWarrantyMonths: 12,
     serviceIntervalMonths: 0,
   },
@@ -79,7 +178,18 @@ export const DEVICE_CATEGORIES = [
     id: 'inverter',
     name: 'Inverter / UPS',
     icon: '🔋',
-    commonBrands: ['Luminous', 'Microtek', 'Exide', 'Amaron', 'Su-Kam', 'V-Guard', 'Genus', 'Okaya', 'Base', 'Livguard'],
+    commonBrands: [
+      'Luminous',
+      'Microtek',
+      'Exide',
+      'Amaron',
+      'Su-Kam',
+      'V-Guard',
+      'Genus',
+      'Okaya',
+      'Base',
+      'Livguard',
+    ],
     defaultWarrantyMonths: 24,
     serviceIntervalMonths: 12,
   },
@@ -88,6 +198,15 @@ export const DEVICE_CATEGORIES = [
 // Helper: get category by ID
 export function getCategoryById(id) {
   return DEVICE_CATEGORIES.find(c => c.id === id);
+}
+
+// Helper: resolve a stored device_types.name back to a category id
+export function getCategoryIdByName(name) {
+  if (!name) return null;
+  const match = DEVICE_CATEGORIES.find(
+    c => c.name === name || c.id === name || c.name.toLowerCase() === String(name).toLowerCase()
+  );
+  return match?.id || null;
 }
 
 // Helper: get all category names for dropdown
@@ -115,16 +234,79 @@ export function getServiceInterval(categoryId) {
 
 // Common specs by category (for reference/display)
 export const CATEGORY_SPECS = {
-  ac: ['Cooling Capacity (Ton)', 'Star Rating', 'Type (Split/Window/Portable)', 'Refrigerant (R32/R410A)', 'Inverter/Non-Inverter'],
-  fridge: ['Capacity (Liters)', 'Type (Single/Double/Side-by-side)', 'Star Rating', 'Frost Free/Direct Cool', 'Compressor Type'],
-  washing_machine: ['Capacity (kg)', 'Type (Front/Top Load)', 'Star Rating', 'Fully/Semi Automatic', 'Inverter Motor'],
-  tv: ['Screen Size (inches)', 'Resolution (4K/Full HD/HD)', 'Smart TV OS', 'Display Type (LED/OLED/QLED)', 'Refresh Rate'],
-  microwave: ['Capacity (Liters)', 'Type (Solo/Grill/Convection)', 'Power Levels', 'Auto Cook Menus', 'Child Lock'],
-  water_purifier: ['Purification Tech (RO/UV/UF)', 'Storage Capacity (L)', 'TDS Controller', 'Filter Life Indicator', 'Mineral Cartridge'],
-  geyser: ['Capacity (Liters)', 'Type (Instant/Storage)', 'Star Rating', 'Pressure Rating', 'Warranty on Tank'],
-  laptop: ['Processor (i5/i7/Ryzen 5/7)', 'RAM (GB)', 'Storage (SSD/HDD)', 'Screen Size', 'Graphics Card', 'OS'],
-  smartphone: ['Processor', 'RAM (GB)', 'Storage (GB)', 'Screen Size', 'Camera (MP)', 'Battery (mAh)', '5G Support'],
-  inverter: ['Capacity (VA/Watts)', 'Battery Type (Tubular/Flat)', 'Waveform (Sine/Square)', 'Charging Current', 'Display Type'],
+  ac: [
+    'Cooling Capacity (Ton)',
+    'Star Rating',
+    'Type (Split/Window/Portable)',
+    'Refrigerant (R32/R410A)',
+    'Inverter/Non-Inverter',
+  ],
+  fridge: [
+    'Capacity (Liters)',
+    'Type (Single/Double/Side-by-side)',
+    'Star Rating',
+    'Frost Free/Direct Cool',
+    'Compressor Type',
+  ],
+  washing_machine: [
+    'Capacity (kg)',
+    'Type (Front/Top Load)',
+    'Star Rating',
+    'Fully/Semi Automatic',
+    'Inverter Motor',
+  ],
+  tv: [
+    'Screen Size (inches)',
+    'Resolution (4K/Full HD/HD)',
+    'Smart TV OS',
+    'Display Type (LED/OLED/QLED)',
+    'Refresh Rate',
+  ],
+  microwave: [
+    'Capacity (Liters)',
+    'Type (Solo/Grill/Convection)',
+    'Power Levels',
+    'Auto Cook Menus',
+    'Child Lock',
+  ],
+  water_purifier: [
+    'Purification Tech (RO/UV/UF)',
+    'Storage Capacity (L)',
+    'TDS Controller',
+    'Filter Life Indicator',
+    'Mineral Cartridge',
+  ],
+  geyser: [
+    'Capacity (Liters)',
+    'Type (Instant/Storage)',
+    'Star Rating',
+    'Pressure Rating',
+    'Warranty on Tank',
+  ],
+  laptop: [
+    'Processor (i5/i7/Ryzen 5/7)',
+    'RAM (GB)',
+    'Storage (SSD/HDD)',
+    'Screen Size',
+    'Graphics Card',
+    'OS',
+  ],
+  smartphone: [
+    'Processor',
+    'RAM (GB)',
+    'Storage (GB)',
+    'Screen Size',
+    'Camera (MP)',
+    'Battery (mAh)',
+    '5G Support',
+  ],
+  inverter: [
+    'Capacity (VA/Watts)',
+    'Battery Type (Tubular/Flat)',
+    'Waveform (Sine/Square)',
+    'Charging Current',
+    'Display Type',
+  ],
 };
 
 export function getSpecsForCategory(categoryId) {
@@ -178,21 +360,21 @@ export const BARCODE_LOOKUP_CONFIG = {
 
 /**
  * Generic barcode/OCR → product lookup flow
- * 
+ *
  * async function lookupProduct(barcodeOrImage) {
  *   // 1. Try local static data first (fast, offline)
  *   const local = searchLocalModels(barcodeOrImage);
  *   if (local) return { source: 'local', ...local };
- *   
+ *
  *   // 2. Try UPCitemdb (free, 100/day)
  *   try {
  *     const upc = await fetch(`${UPCITEMDB_CONFIG.baseUrl}${UPCITEMDB_CONFIG.endpoints.lookup}?upc=${barcode}`);
  *     if (upc.ok) return { source: 'upcitemdb', ...await upc.json() };
  *   } catch {}
- *   
+ *
  *   // 3. Try Icecat (if registered)
  *   // ...
- *   
+ *
  *   // 4. Fallback: return null, user fills manually
  *   return null;
  * }

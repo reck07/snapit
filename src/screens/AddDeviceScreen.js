@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,35 +7,34 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
-  useWindowDimensions,
   Image,
-  Switch,
+  Platform,
+  useWindowDimensions,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Camera, Image as ImageIcon, ScanLine, X } from 'lucide-react-native';
 import Dropdown from '../components/Dropdown';
 import DateField from '../components/DateField';
-import { 
-  addProductFull, 
-  updateProductFull, 
+import { PressableScale } from '../components/motion';
+import { useCurrency } from '../context/CurrencyContext';
+import { colors, fonts, radii, shadows, spacing, type } from '../theme';
+import {
+  addProductFull,
+  updateProductFull,
   getProductById,
+  getBrands,
+  getDeviceTypes,
   getBrandIdByName,
   getTypeIdByName,
-  getBrands,
-  getDeviceTypes
 } from '../database/database';
-import { 
-  DEVICE_CATEGORIES, 
-  getCategoryNames, 
-  getBrandsForCategory,
-  getDefaultWarranty,
-  getServiceInterval,
-} from '../data/deviceCatalog';
+import { getCategoryNames, getBrandsForCategory, getCategoryById, getCategoryIdByName } from '../data/deviceCatalog';
 import { lookupByBarcode } from '../utils/apiClient';
+import { uriToPersistable } from '../utils/photo';
 
 const PRECISION_OPTIONS = [
   { label: 'Exact date', value: 'exact' },
   { label: 'Year only', value: 'year_only' },
-  { label: 'Don\'t know', value: 'unknown' },
+  { label: "Don't know", value: 'unknown' },
 ];
 
 function computeWarrantyExpiry(purchaseDate, warrantyMonths) {
@@ -45,34 +44,38 @@ function computeWarrantyExpiry(purchaseDate, warrantyMonths) {
   return date.toISOString().split('T')[0];
 }
 
-export default function AddDeviceScreenTest({ route, navigation }) {
+export default function AddDeviceScreen({ route, navigation }) {
   const { width } = useWindowDimensions();
   const wide = width >= 600;
+  const { currency } = useCurrency();
 
   const editingId = route.params?.productId ?? null;
 
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
   const [modelName, setModelName] = useState('');
-  
+
   const [purchaseDate, setPurchaseDate] = useState('');
   const [purchaseDatePrecision, setPurchaseDatePrecision] = useState('exact');
   const [purchaseYear, setPurchaseYear] = useState('');
-  
+
   const [purchasePrice, setPurchasePrice] = useState('');
-  
+
   const [warrantyMonths, setWarrantyMonths] = useState('');
   const [warrantyExpiryDate, setWarrantyExpiryDate] = useState('');
-  const [nextServiceDue, setNextServiceDue] = useState('');
   const [seller, setSeller] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
-  
+
+  const [hasBill, setHasBill] = useState(false);
+  const [billPhoto, setBillPhoto] = useState(null);
+  const [invoicePhoto, setInvoicePhoto] = useState(null);
+
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [error, setError] = useState('');
 
   const categories = getCategoryNames();
-  const brandsForCategory = useCallback((catId) => getBrandsForCategory(catId), []);
+  const brandsForCategory = useCallback(catId => getBrandsForCategory(catId), []);
 
   // Lookup product by barcode using backend API
   async function lookupProductByBarcode(barcode) {
@@ -85,9 +88,10 @@ export default function AddDeviceScreenTest({ route, navigation }) {
         if (p.name) setModelName(p.name);
         if (p.brand) {
           // Find brand in our dropdown
-          const brandMatch = brandsForCategory(selectedType)?.find(b => 
-            b.toLowerCase().includes(p.brand.toLowerCase()) || 
-            p.brand.toLowerCase().includes(b.toLowerCase())
+          const brandMatch = brandsForCategory(selectedType)?.find(
+            b =>
+              b.toLowerCase().includes(p.brand.toLowerCase()) ||
+              p.brand.toLowerCase().includes(b.toLowerCase())
           );
           if (brandMatch) setSelectedBrand(brandMatch);
         }
@@ -127,9 +131,9 @@ export default function AddDeviceScreenTest({ route, navigation }) {
         const brand = brands.find(b => b.id === product.brand_id);
         const types = await getDeviceTypes(product.brand_id);
         const type = types.find(t => t.id === product.type_id);
-        
+
         setModelName(product.model_name || '');
-        setSelectedType(type?.name || '');
+        setSelectedType(getCategoryIdByName(type?.name) || '');
         setSelectedBrand(brand?.name || '');
         setPurchaseDate(product.purchase_date || '');
         setPurchaseDatePrecision(product.purchase_date_precision || 'exact');
@@ -137,13 +141,15 @@ export default function AddDeviceScreenTest({ route, navigation }) {
           setPurchaseYear(product.purchase_date.split('-')[0]);
         }
         setPurchasePrice(product.purchase_price ? String(product.purchase_price) : '');
-        setHasBill(product.has_bill === 1);
-        setBillPhoto(product.bill_photo || null);
-        setWarrantyMonths(product.warranty_period_months ? String(product.warranty_period_months) : '');
+        setHasBill(product.has_bill === true || product.has_bill === 1);
+        setBillPhoto(product.bill_photo_path || null);
+        setWarrantyMonths(
+          product.warranty_period_months ? String(product.warranty_period_months) : ''
+        );
         setWarrantyExpiryDate(product.warranty_expiry_date || '');
         setSeller(product.seller || '');
         setSerialNumber(product.serial_number || '');
-        setInvoicePhoto(product.invoice_photo || null);
+        setInvoicePhoto(product.invoice_photo_path || null);
       }
     } catch (e) {
       console.error('Failed to load product:', e);
@@ -153,12 +159,12 @@ export default function AddDeviceScreenTest({ route, navigation }) {
   // Handler functions
   function handleBrandChange(val) {
     setSelectedBrand(val);
-    setErrors((prev) => ({ ...prev, brand: undefined }));
+    setErrors(prev => ({ ...prev, brand: undefined }));
   }
 
   function handleTypeChange(val) {
     setSelectedType(val);
-    setErrors((prev) => ({ ...prev, type: undefined }));
+    setErrors(prev => ({ ...prev, type: undefined }));
   }
 
   function handlePurchaseDateChange(newDate) {
@@ -167,7 +173,7 @@ export default function AddDeviceScreenTest({ route, navigation }) {
       const expiry = computeWarrantyExpiry(newDate, warrantyMonths);
       setWarrantyExpiryDate(expiry);
     }
-    setErrors((prev) => ({ ...prev, purchaseDate: undefined }));
+    setErrors(prev => ({ ...prev, purchaseDate: undefined }));
   }
 
   function handlePurchaseYearChange(year) {
@@ -177,7 +183,7 @@ export default function AddDeviceScreenTest({ route, navigation }) {
       const expiry = computeWarrantyExpiry(`${year}-01-01`, warrantyMonths);
       setWarrantyExpiryDate(expiry);
     }
-    setErrors((prev) => ({ ...prev, purchaseDate: undefined }));
+    setErrors(prev => ({ ...prev, purchaseDate: undefined }));
   }
 
   function handleWarrantyMonthsChange(val) {
@@ -189,7 +195,7 @@ export default function AddDeviceScreenTest({ route, navigation }) {
     } else {
       setWarrantyExpiryDate('');
     }
-    setErrors((prev) => ({ ...prev, warrantyMonths: undefined }));
+    setErrors(prev => ({ ...prev, warrantyMonths: undefined }));
   }
 
   async function pickBillPhoto() {
@@ -263,7 +269,8 @@ export default function AddDeviceScreenTest({ route, navigation }) {
     if (!selectedBrand) errs.brand = 'Please select a brand';
     if (!selectedType) errs.type = 'Please select a device type';
     // Model name is optional - can be filled by scan or typed manually
-    if (purchasePrice && isNaN(parseFloat(purchasePrice))) errs.purchasePrice = 'Price must be a number';
+    if (purchasePrice && isNaN(parseFloat(purchasePrice)))
+      errs.purchasePrice = 'Price must be a number';
     if (warrantyMonths && (isNaN(parseInt(warrantyMonths)) || parseInt(warrantyMonths) < 0)) {
       errs.warrantyMonths = 'Warranty months must be a positive number';
     }
@@ -274,30 +281,34 @@ export default function AddDeviceScreenTest({ route, navigation }) {
     try {
       // Look up database IDs from names
       const brandId = await getBrandIdByName(selectedBrand);
-      const typeId = await getTypeIdByName(brandId, selectedType);
-      
+      const category = getCategoryById(selectedType);
+      const typeId = await getTypeIdByName(brandId, category?.name || selectedType);
+
       if (!brandId || !typeId) {
-        Alert.alert('Error', 'Selected brand or type not found in database. Try refreshing brands.');
+        Alert.alert(
+          'Error',
+          'Selected brand or type not found in database. Try refreshing brands.'
+        );
         setSaving(false);
         return;
       }
-      
+
       const fields = {
-        modelName: modelName.trim(),
+        modelName: modelName.trim() || 'Unnamed device',
         typeId: typeId,
         brandId: brandId,
         purchaseDate: purchaseDate || null,
         purchaseDatePrecision: purchaseDatePrecision,
         purchasePrice: purchasePrice ? parseFloat(purchasePrice) : null,
         hasBill: hasBill,
-        billPhoto: null,
+        billPhoto: billPhoto,
         warrantyPeriodMonths: warrantyMonths ? parseInt(warrantyMonths) : null,
         warrantyExpiryDate: warrantyExpiryDate || null,
         seller: seller.trim() || null,
         serialNumber: serialNumber.trim() || null,
-        invoicePhoto: null,
+        invoicePhoto: invoicePhoto,
       };
-      
+
       if (editingId) {
         await updateProductFull(editingId, fields);
       } else {
@@ -332,7 +343,7 @@ export default function AddDeviceScreenTest({ route, navigation }) {
 
         {/* Required fields first - Category first, then Brand */}
         <View style={wide ? styles.rowWide : null}>
-          <View style={styles.fieldGroup}>
+          <View style={[styles.fieldGroup, styles.fieldGroupRow]}>
             <Text style={styles.label}>Category *</Text>
             <Dropdown
               items={categories}
@@ -343,20 +354,17 @@ export default function AddDeviceScreenTest({ route, navigation }) {
             {errors.type ? <Text style={styles.fieldError}>{errors.type}</Text> : null}
           </View>
 
-          <View style={styles.fieldGroup}>
+          <View style={[styles.fieldGroup, styles.fieldGroupRow]}>
             <Text style={styles.label}>Brand *</Text>
             <Dropdown
-              items={selectedType 
-                ? brandsForCategory(selectedType).map(b => ({ label: b, value: b }))
-                : []
+              items={
+                selectedType
+                  ? brandsForCategory(selectedType).map(b => ({ label: b, value: b }))
+                  : []
               }
               selectedValue={selectedBrand}
               onValueChange={handleBrandChange}
-              placeholder={
-                !selectedType
-                  ? 'Select category first'
-                  : 'Select Brand'
-              }
+              placeholder={!selectedType ? 'Select category first' : 'Select Brand'}
               disabled={!selectedType}
             />
             {errors.brand ? <Text style={styles.fieldError}>{errors.brand}</Text> : null}
@@ -367,26 +375,33 @@ export default function AddDeviceScreenTest({ route, navigation }) {
           <Text style={styles.label}>Model Name</Text>
           <View style={styles.inputWithButton}>
             <TextInput
-              style={[styles.input, errors.model && styles.inputError]}
-              placeholder="e.g. 1.5 Ton Split AC, Galaxy S23 (or tap 📷 Scan)"
-              placeholderTextColor="#999"
+              style={[styles.input, styles.modelInput, errors.model && styles.inputError]}
+              placeholder="e.g. 1.5 Ton Split AC, Galaxy S23 (or tap Scan)"
+              placeholderTextColor={colors.muted}
               value={modelName}
-              onChangeText={(t) => {
+              onChangeText={t => {
                 setModelName(t);
-                setErrors((prev) => ({ ...prev, model: undefined }));
+                setErrors(prev => ({ ...prev, model: undefined }));
               }}
             />
             <TouchableOpacity
               style={styles.scanButton}
               onPress={() => {
-                // Simple approach: prompt for barcode number
-                const barcode = prompt('Enter barcode/UPC number:');
+                if (Platform.OS !== 'web') {
+                  Alert.alert(
+                    'Scan unavailable',
+                    'Barcode lookup is currently available in the web build only.'
+                  );
+                  return;
+                }
+                const barcode = window.prompt('Enter barcode/UPC number:');
                 if (barcode && barcode.trim()) {
                   lookupProductByBarcode(barcode.trim());
                 }
               }}
             >
-              <Text style={styles.scanButtonText}>📷 Scan</Text>
+              <ScanLine size={16} color={colors.primary} strokeWidth={1.8} />
+              <Text style={styles.scanButtonText}>Scan</Text>
             </TouchableOpacity>
           </View>
           {/* Model name is optional - can be filled by scan or typed manually */}
@@ -400,15 +415,15 @@ export default function AddDeviceScreenTest({ route, navigation }) {
         <View style={styles.fieldGroup}>
           <Text style={styles.label}>When purchased?</Text>
           <Text style={styles.helpText}>How sure are you about the date?</Text>
-          
+
           {/* Precision selector */}
           <View style={styles.precisionSelector}>
-            {PRECISION_OPTIONS.map((opt) => (
+            {PRECISION_OPTIONS.map(opt => (
               <TouchableOpacity
                 key={opt.value}
                 style={[
                   styles.precisionButton,
-                  purchaseDatePrecision === opt.value && styles.precisionButtonActive
+                  purchaseDatePrecision === opt.value && styles.precisionButtonActive,
                 ]}
                 onPress={() => {
                   setPurchaseDatePrecision(opt.value);
@@ -416,10 +431,12 @@ export default function AddDeviceScreenTest({ route, navigation }) {
                   if (opt.value === 'year_only') setPurchaseYear('');
                 }}
               >
-                <Text style={[
-                  styles.precisionButtonText,
-                  purchaseDatePrecision === opt.value && styles.precisionButtonTextActive
-                ]}>
+                <Text
+                  style={[
+                    styles.precisionButtonText,
+                    purchaseDatePrecision === opt.value && styles.precisionButtonTextActive,
+                  ]}
+                >
                   {opt.label}
                 </Text>
               </TouchableOpacity>
@@ -438,9 +455,9 @@ export default function AddDeviceScreenTest({ route, navigation }) {
             <TextInput
               style={styles.input}
               placeholder="e.g. 2023"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.muted}
               value={purchaseYear}
-              onChangeText={(t) => handlePurchaseYearChange(t.replace(/\D/g, '').slice(0, 4))}
+              onChangeText={t => handlePurchaseYearChange(t.replace(/\D/g, '').slice(0, 4))}
               keyboardType="numeric"
               maxLength={4}
             />
@@ -452,45 +469,106 @@ export default function AddDeviceScreenTest({ route, navigation }) {
         </View>
 
         <View style={wide ? styles.rowWide : null}>
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Purchase Price ($)</Text>
+          <View style={[styles.fieldGroup, styles.fieldGroupRow]}>
+            <Text style={styles.label}>Purchase Price ({currency})</Text>
             <TextInput
               style={[styles.input, errors.purchasePrice && styles.inputError]}
               placeholder="e.g. 1299.99 (optional)"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.muted}
               value={purchasePrice}
-              onChangeText={(t) => { setPurchasePrice(t); setErrors((prev) => ({ ...prev, purchasePrice: undefined })); }}
+              onChangeText={t => {
+                setPurchasePrice(t);
+                setErrors(prev => ({ ...prev, purchasePrice: undefined }));
+              }}
               keyboardType="decimal-pad"
             />
-            {errors.purchasePrice ? <Text style={styles.fieldError}>{errors.purchasePrice}</Text> : null}
+            {errors.purchasePrice ? (
+              <Text style={styles.fieldError}>{errors.purchasePrice}</Text>
+            ) : null}
           </View>
 
-          <View style={styles.fieldGroup}>
+          <View style={[styles.fieldGroup, styles.fieldGroupRow]}>
             <Text style={styles.label}>Warranty period (months)</Text>
             <TextInput
               style={[styles.input, errors.warrantyMonths && styles.inputError]}
               placeholder="e.g. 12 (optional)"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.muted}
               value={warrantyMonths}
               onChangeText={handleWarrantyMonthsChange}
               keyboardType="numeric"
             />
-            {errors.warrantyMonths ? <Text style={styles.fieldError}>{errors.warrantyMonths}</Text> : null}
+            {errors.warrantyMonths ? (
+              <Text style={styles.fieldError}>{errors.warrantyMonths}</Text>
+            ) : null}
             <Text style={styles.helpText}>How long is the warranty? (e.g. 12 for 1 year)</Text>
           </View>
         </View>
 
-        {warrantyExpiryDate && (
+        {!!warrantyExpiryDate && (
           <View style={styles.fieldGroup}>
             <Text style={styles.label}>Warranty Expires</Text>
             <DateField
               value={warrantyExpiryDate}
-              onChange={(d) => setWarrantyExpiryDate(d)}
+              onChange={d => setWarrantyExpiryDate(d)}
               placeholder={warrantyExpiryDate}
             />
             <Text style={styles.helpText}>Auto-computed from purchase date + warranty months</Text>
           </View>
         )}
+
+        {/* Bill Photo */}
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Bill / Receipt Photo</Text>
+          <View style={styles.photoRow}>
+            <TouchableOpacity style={styles.photoButton} onPress={takeBillPhoto}>
+              <Camera size={16} color={colors.primary} strokeWidth={1.8} />
+              <Text style={styles.photoButtonText}>Camera</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.photoButton} onPress={pickBillPhoto}>
+              <ImageIcon size={16} color={colors.primary} strokeWidth={1.8} />
+              <Text style={styles.photoButtonText}>Gallery</Text>
+            </TouchableOpacity>
+          </View>
+          {!!billPhoto && (
+            <View style={styles.previewWrap}>
+              <Image source={{ uri: billPhoto }} style={styles.preview} />
+              <TouchableOpacity
+                style={styles.removePhoto}
+                onPress={() => {
+                  setBillPhoto(null);
+                  setHasBill(false);
+                }}
+              >
+                <X size={13} color={colors.white} strokeWidth={2} />
+                <Text style={styles.removePhotoText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        {/* Invoice Photo */}
+        <View style={styles.fieldGroup}>
+          <Text style={styles.label}>Invoice Photo</Text>
+          <View style={styles.photoRow}>
+            <TouchableOpacity style={styles.photoButton} onPress={takeInvoicePhoto}>
+              <Camera size={16} color={colors.primary} strokeWidth={1.8} />
+              <Text style={styles.photoButtonText}>Camera</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.photoButton} onPress={pickInvoicePhoto}>
+              <ImageIcon size={16} color={colors.primary} strokeWidth={1.8} />
+              <Text style={styles.photoButtonText}>Gallery</Text>
+            </TouchableOpacity>
+          </View>
+          {!!invoicePhoto && (
+            <View style={styles.previewWrap}>
+              <Image source={{ uri: invoicePhoto }} style={styles.preview} />
+              <TouchableOpacity style={styles.removePhoto} onPress={() => setInvoicePhoto(null)}>
+                <X size={13} color={colors.white} strokeWidth={2} />
+                <Text style={styles.removePhotoText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
 
         {/* Additional optional fields */}
         <View style={styles.fieldGroup}>
@@ -498,7 +576,7 @@ export default function AddDeviceScreenTest({ route, navigation }) {
           <TextInput
             style={styles.input}
             placeholder="e.g. Best Buy, Amazon, Local Shop (optional)"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={seller}
             onChangeText={setSeller}
           />
@@ -509,21 +587,23 @@ export default function AddDeviceScreenTest({ route, navigation }) {
           <TextInput
             style={styles.input}
             placeholder="Optional"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.muted}
             value={serialNumber}
             onChangeText={setSerialNumber}
           />
         </View>
 
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+        <PressableScale
+          style={styles.saveButton}
+          hoverStyle={styles.saveButtonHover}
           onPress={handleSave}
           disabled={saving}
+          accessibilityLabel={editingId ? 'Save device changes' : 'Save device'}
         >
           <Text style={styles.saveButtonText}>
             {saving ? 'Saving...' : editingId ? 'Save Changes' : 'Save Device'}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
     </ScrollView>
   );
@@ -532,202 +612,219 @@ export default function AddDeviceScreenTest({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.bg,
   },
   content: {
-    padding: 16,
+    padding: spacing.md,
     alignItems: 'center',
-    paddingBottom: 40,
+    paddingBottom: spacing.xxl,
   },
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
     width: '100%',
-    maxWidth: 560,
+    maxWidth: 620,
     alignSelf: 'center',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.medium,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
+    ...type.body,
+    color: colors.muted,
+    marginBottom: spacing.md,
   },
   errorBanner: {
-    backgroundColor: '#fff3f3',
-    borderRadius: 10,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radii.md,
     padding: 12,
-    marginBottom: 16,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: '#f5c6c6',
+    borderColor: colors.dangerBorder,
   },
   errorBannerText: {
-    color: '#c0392b',
-    fontSize: 13,
-    lineHeight: 18,
+    ...type.small,
+    color: colors.danger,
   },
   rowWide: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   fieldGroup: {
-    flex: 1,
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: 'auto',
     marginBottom: 4,
     width: '100%',
   },
+  fieldGroupRow: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 0,
+    width: 'auto',
+  },
   label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
+    ...type.label,
+    color: colors.textBody,
     marginBottom: 6,
-    marginTop: 16,
+    marginTop: spacing.md,
   },
   input: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: colors.white,
+    borderRadius: radii.md,
     padding: 14,
-    fontSize: 16,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.text,
+    minHeight: 48,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
+  },
+  modelInput: {
+    flex: 1,
   },
   inputError: {
-    borderColor: '#e74c3c',
+    borderColor: colors.danger,
   },
   fieldError: {
-    color: '#e74c3c',
-    fontSize: 13,
+    fontFamily: fonts.body,
+    color: colors.danger,
+    fontSize: 12,
     marginTop: 5,
   },
   sectionDivider: {
-    marginTop: 8,
-    marginBottom: 8,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#888',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    ...type.label,
+    color: colors.textBody,
   },
   precisionSelector: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
     flexWrap: 'wrap',
   },
   precisionButton: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    backgroundColor: colors.row,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 9,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
   },
   precisionButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   precisionButtonText: {
+    fontFamily: fonts.body,
     fontSize: 13,
-    color: '#333',
-    fontWeight: '500',
+    color: colors.textBody,
   },
   precisionButtonTextActive: {
-    color: '#fff',
+    fontFamily: fonts.bodySemibold,
+    color: colors.white,
   },
   helpText: {
+    fontFamily: fonts.body,
     fontSize: 12,
-    color: '#999',
+    lineHeight: 18,
+    color: colors.muted,
     marginTop: 6,
     fontStyle: 'italic',
   },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
   photoRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   photoButton: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.white,
+    borderRadius: radii.md,
+    padding: 13,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
   },
   photoButtonText: {
-    fontSize: 15,
-    color: '#333',
+    fontFamily: fonts.body,
+    fontSize: 14,
+    color: colors.text,
   },
   previewWrap: {
-    marginTop: 12,
+    marginTop: spacing.md,
     position: 'relative',
   },
   preview: {
     width: '100%',
     height: 200,
-    borderRadius: 12,
-    backgroundColor: '#eee',
+    borderRadius: radii.md,
+    backgroundColor: colors.row,
   },
   removePhoto: {
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.overlay,
+    borderRadius: radii.full,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   removePhotoText: {
-    color: '#fff',
+    fontFamily: fonts.bodySemibold,
+    color: colors.white,
     fontSize: 12,
-    fontWeight: '600',
   },
   saveButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.primary,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: 14,
     alignItems: 'center',
     alignSelf: 'flex-end',
-    marginTop: 32,
+    marginTop: spacing.xl,
+    ...shadows.soft,
   },
-  saveButtonDisabled: {
-    opacity: 0.6,
+  saveButtonHover: {
+    backgroundColor: colors.primaryDark,
   },
   saveButtonText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '600',
+    ...type.button,
+    color: colors.white,
+    fontSize: 15,
   },
   inputWithButton: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
+    alignItems: 'stretch',
   },
   scanButton: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.md,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#d0d0d0',
+    borderColor: colors.border,
   },
   scanButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontFamily: fonts.bodySemibold,
+    fontSize: 13,
+    color: colors.primary,
   },
 });

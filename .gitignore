@@ -31,7 +31,14 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
+.env
+.env.*
+!.env.example
+
+# local test artifacts and internal notes
+screenshots/
+ERROR_ANALYSIS.md
+supabase-fix.sql
 
 # typescript
 *.tsbuildinfo

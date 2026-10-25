@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  StyleSheet,
-} from 'react-native';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, Modal, StyleSheet } from 'react-native';
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { colors, fonts, radii, shadows, spacing, type } from '../theme';
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -35,9 +41,9 @@ export default function DateField({ value, onChange, placeholder = 'Select date'
   }
 
   function prevMonth() {
-    setViewMonth((m) => {
+    setViewMonth(m => {
       if (m === 0) {
-        setViewYear((y) => y - 1);
+        setViewYear(y => y - 1);
         return 11;
       }
       return m - 1;
@@ -45,9 +51,9 @@ export default function DateField({ value, onChange, placeholder = 'Select date'
   }
 
   function nextMonth() {
-    setViewMonth((m) => {
+    setViewMonth(m => {
       if (m === 11) {
-        setViewYear((y) => y + 1);
+        setViewYear(y => y + 1);
         return 0;
       }
       return m + 1;
@@ -77,19 +83,17 @@ export default function DateField({ value, onChange, placeholder = 'Select date'
 
   function isToday(day) {
     return (
-      today.getFullYear() === viewYear &&
-      today.getMonth() === viewMonth &&
-      today.getDate() === day
+      today.getFullYear() === viewYear && today.getMonth() === viewMonth && today.getDate() === day
     );
   }
 
   return (
-    <View>
+    <View style={styles.root}>
       <TouchableOpacity style={styles.field} onPress={openPicker}>
         <Text style={value ? styles.fieldText : styles.fieldPlaceholder}>
           {value || placeholder}
         </Text>
-        <Text style={styles.icon}>📅</Text>
+        <CalendarDays size={18} color={colors.muted} strokeWidth={1.8} />
       </TouchableOpacity>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -97,18 +101,18 @@ export default function DateField({ value, onChange, placeholder = 'Select date'
           <TouchableOpacity activeOpacity={1} style={styles.sheet} onPress={() => {}}>
             <View style={styles.header}>
               <TouchableOpacity onPress={prevMonth} hitSlop={12}>
-                <Text style={styles.nav}>‹</Text>
+                <ChevronLeft size={22} color={colors.primary} strokeWidth={2} />
               </TouchableOpacity>
               <Text style={styles.title}>
                 {MONTHS[viewMonth]} {viewYear}
               </Text>
               <TouchableOpacity onPress={nextMonth} hitSlop={12}>
-                <Text style={styles.nav}>›</Text>
+                <ChevronRight size={22} color={colors.primary} strokeWidth={2} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.weekRow}>
-              {WEEKDAYS.map((w) => (
+              {WEEKDAYS.map(w => (
                 <Text key={w} style={styles.weekday}>
                   {w}
                 </Text>
@@ -129,12 +133,7 @@ export default function DateField({ value, onChange, placeholder = 'Select date'
                     ]}
                     onPress={() => pick(day)}
                   >
-                    <Text
-                      style={[
-                        styles.cellText,
-                        isSelected(day) && styles.cellTextSelected,
-                      ]}
-                    >
+                    <Text style={[styles.cellText, isSelected(day) && styles.cellTextSelected]}>
                       {day}
                     </Text>
                   </TouchableOpacity>
@@ -167,60 +166,63 @@ export default function DateField({ value, onChange, placeholder = 'Select date'
 }
 
 const styles = StyleSheet.create({
+  root: {
+    width: '100%',
+    flexShrink: 0,
+  },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radii.sm,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    minHeight: 48,
+    ...shadows.soft,
   },
   fieldText: {
-    fontSize: 16,
-    color: '#1a1a1a',
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.text,
   },
   fieldPlaceholder: {
-    fontSize: 16,
-    color: '#999',
-  },
-  icon: {
-    fontSize: 16,
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.muted,
   },
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.lg,
   },
   sheet: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    paddingBottom: 12,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    paddingBottom: spacing.sm,
     alignSelf: 'center',
-    width: 300,
+    width: 320,
     maxWidth: '100%',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.deep,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  nav: {
-    fontSize: 26,
-    color: '#007AFF',
-    paddingHorizontal: 6,
+    borderBottomColor: colors.border,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
+    ...type.h4,
   },
   weekRow: {
     flexDirection: 'row',
@@ -230,9 +232,11 @@ const styles = StyleSheet.create({
   weekday: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 12,
-    color: '#999',
-    fontWeight: '600',
+    fontFamily: fonts.bodySemibold,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: colors.muted,
   },
   grid: {
     flexDirection: 'row',
@@ -247,41 +251,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cellSelected: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderRadius: 24,
   },
   cellToday: {
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: colors.primary,
     borderRadius: 24,
   },
   cellText: {
+    fontFamily: fonts.body,
     fontSize: 15,
-    color: '#333',
+    color: colors.textBody,
   },
   cellTextSelected: {
-    color: '#fff',
-    fontWeight: '700',
+    fontFamily: fonts.bodyBold,
+    color: colors.white,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
     marginTop: 6,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: colors.border,
   },
   clear: {
-    color: '#c0392b',
-    fontSize: 15,
-    fontWeight: '600',
-    paddingVertical: 8,
+    fontFamily: fonts.bodySemibold,
+    color: colors.danger,
+    fontSize: 14,
+    paddingVertical: spacing.sm,
   },
   cancel: {
-    color: '#007AFF',
-    fontSize: 15,
-    fontWeight: '600',
-    paddingVertical: 8,
+    fontFamily: fonts.bodySemibold,
+    color: colors.primary,
+    fontSize: 14,
+    paddingVertical: spacing.sm,
   },
 });

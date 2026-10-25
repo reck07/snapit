@@ -1,16 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
-import { getCostAnalytics, getTechnicianMemory, getWarrantyExpiringSoon, getUpcomingServiceReminders } from '../database/database';
-import { confirmAction } from '../utils/confirm';
+  BarChart3,
+  ChevronRight,
+  ShieldAlert,
+  Smartphone,
+  Sprout,
+  Tag,
+  UserRound,
+  Wrench,
+} from 'lucide-react-native';
+import {
+  getCostAnalytics,
+  getTechnicianMemory,
+  getWarrantyExpiringSoon,
+  getUpcomingServiceReminders,
+} from '../database/database';
+import { useCurrency } from '../context/CurrencyContext';
+import { colors, fonts, radii, shadows, spacing, type } from '../theme';
+
+function SectionTitle({ icon: Icon, children }) {
+  return (
+    <View style={styles.sectionHeading}>
+      <Icon size={17} color={colors.primary} strokeWidth={1.8} />
+      <Text style={styles.sectionTitle}>{children}</Text>
+    </View>
+  );
+}
 
 export default function AnalyticsScreen({ navigation }) {
+  const { formatCurrency } = useCurrency();
   const [analytics, setAnalytics] = useState(null);
   const [technicians, setTechnicians] = useState([]);
   const [warrantyAlerts, setWarrantyAlerts] = useState([]);
@@ -43,16 +62,13 @@ export default function AnalyticsScreen({ navigation }) {
     }
   }
 
-  function formatCurrency(value) {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value || 0);
-  }
-
   function getWarrantyStatus(daysLeft) {
-    if (daysLeft === null || daysLeft === undefined) return { text: 'No warranty info', color: '#999' };
-    if (daysLeft <= 0) return { text: 'Warranty expired', color: '#e74c3c' };
-    if (daysLeft <= 7) return { text: `Expires in ${daysLeft} days`, color: '#e74c3c' };
-    if (daysLeft <= 30) return { text: `Expires in ${daysLeft} days`, color: '#f39c12' };
-    return { text: `Still covered (${daysLeft} days left)`, color: '#27ae60' };
+    if (daysLeft === null || daysLeft === undefined)
+      return { text: 'No warranty info', color: colors.muted };
+    if (daysLeft <= 0) return { text: 'Warranty expired', color: colors.danger };
+    if (daysLeft <= 7) return { text: `Expires in ${daysLeft} days`, color: colors.danger };
+    if (daysLeft <= 30) return { text: `Expires in ${daysLeft} days`, color: colors.secondary };
+    return { text: `Still covered (${daysLeft} days left)`, color: colors.successDark };
   }
 
   if (loading) {
@@ -90,14 +106,16 @@ export default function AnalyticsScreen({ navigation }) {
       {/* Warranty Alerts */}
       {warrantyAlerts.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⚠️ Warranty Expiring Soon</Text>
-          {warrantyAlerts.map((item) => {
+          <SectionTitle icon={ShieldAlert}>Warranty Expiring Soon</SectionTitle>
+          {warrantyAlerts.map(item => {
             const status = getWarrantyStatus(item.days_left);
             return (
               <View key={item.id} style={styles.alertCard}>
                 <View style={styles.alertInfo}>
                   <Text style={styles.alertTitle}>{item.model_name}</Text>
-                  <Text style={styles.alertSub}>{item.brand_name} · {item.type_name}</Text>
+                  <Text style={styles.alertSub}>
+                    {item.brand_name} · {item.type_name}
+                  </Text>
                 </View>
                 <View style={styles.alertStatus}>
                   <Text style={[styles.statusText, { color: status.color }]}>{status.text}</Text>
@@ -112,14 +130,16 @@ export default function AnalyticsScreen({ navigation }) {
       {/* Service Reminders */}
       {serviceReminders.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔧 Service Due Soon</Text>
-          {serviceReminders.map((item) => {
+          <SectionTitle icon={Wrench}>Service Due Soon</SectionTitle>
+          {serviceReminders.map(item => {
             const status = getWarrantyStatus(item.days_left);
             return (
               <View key={item.id} style={styles.alertCard}>
                 <View style={styles.alertInfo}>
                   <Text style={styles.alertTitle}>{item.model_name}</Text>
-                  <Text style={styles.alertSub}>{item.brand_name} · {item.type_name}</Text>
+                  <Text style={styles.alertSub}>
+                    {item.brand_name} · {item.type_name}
+                  </Text>
                 </View>
                 <View style={styles.alertStatus}>
                   <Text style={[styles.statusText, { color: status.color }]}>{status.text}</Text>
@@ -134,8 +154,8 @@ export default function AnalyticsScreen({ navigation }) {
       {/* By Category */}
       {analytics?.byCategory?.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📊 By Category</Text>
-          {analytics.byCategory.map((cat) => (
+          <SectionTitle icon={BarChart3}>By Category</SectionTitle>
+          {analytics.byCategory.map(cat => (
             <View key={cat.category} style={styles.categoryRow}>
               <View style={styles.categoryInfo}>
                 <Text style={styles.categoryName}>{cat.category}</Text>
@@ -157,8 +177,8 @@ export default function AnalyticsScreen({ navigation }) {
       {/* By Brand */}
       {analytics?.byBrand?.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🏷️ By Brand</Text>
-          {analytics.byBrand.map((brand) => (
+          <SectionTitle icon={Tag}>By Brand</SectionTitle>
+          {analytics.byBrand.map(brand => (
             <View key={brand.brand} style={styles.categoryRow}>
               <View style={styles.categoryInfo}>
                 <Text style={styles.categoryName}>{brand.brand}</Text>
@@ -180,8 +200,8 @@ export default function AnalyticsScreen({ navigation }) {
       {/* Device Cost Breakdown */}
       {analytics?.byDevice?.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📱 Device Cost Breakdown</Text>
-          {analytics.byDevice.map((device) => {
+          <SectionTitle icon={Smartphone}>Device Cost Breakdown</SectionTitle>
+          {analytics.byDevice.map(device => {
             const total = (device.purchase_price || 0) + (device.service_total || 0);
             return (
               <TouchableOpacity
@@ -198,9 +218,16 @@ export default function AnalyticsScreen({ navigation }) {
                 <View style={styles.deviceCostAmounts}>
                   <Text style={styles.deviceTotal}>Total: {formatCurrency(total)}</Text>
                   <Text style={styles.deviceBreakdown}>
-                    Buy: {formatCurrency(device.purchase_price)} · Service: {formatCurrency(device.service_total)}
+                    Buy: {device.purchase_price !== null && device.purchase_price !== undefined
+                      ? formatCurrency(device.purchase_price)
+                      : '—'}{' '}
+                    · Service:{' '}
+                    {device.service_total !== null && device.service_total !== undefined
+                      ? formatCurrency(device.service_total)
+                      : '—'}
                   </Text>
                 </View>
+                <ChevronRight size={16} color={colors.muted} strokeWidth={1.8} />
               </TouchableOpacity>
             );
           })}
@@ -210,8 +237,8 @@ export default function AnalyticsScreen({ navigation }) {
       {/* Technician Memory */}
       {technicians.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>👨‍🔧 Technician & Vendor Memory</Text>
-          {technicians.map((tech) => (
+          <SectionTitle icon={UserRound}>Technician &amp; Vendor Memory</SectionTitle>
+          {technicians.map(tech => (
             <View key={`${tech.vendor_name}-${tech.repairman_name}`} style={styles.techCard}>
               <View style={styles.techHeader}>
                 <Text style={styles.techName}>
@@ -219,10 +246,12 @@ export default function AnalyticsScreen({ navigation }) {
                 </Text>
                 <Text style={styles.techVisits}>{tech.visit_count} visits</Text>
               </View>
-              {tech.repairman_name && tech.vendor_name && (
-                <Text style={styles.techPerson}>{tech.repairman_name} @ {tech.vendor_name}</Text>
+              {!!(tech.repairman_name && tech.vendor_name) && (
+                <Text style={styles.techPerson}>
+                  {tech.repairman_name} @ {tech.vendor_name}
+                </Text>
               )}
-              {tech.repairman_contact && (
+              {!!tech.repairman_contact && (
                 <Text style={styles.techContact}>📞 {tech.repairman_contact}</Text>
               )}
               <Text style={styles.techDevices}>Devices: {tech.devices_serviced}</Text>
@@ -234,8 +263,13 @@ export default function AnalyticsScreen({ navigation }) {
 
       {analytics?.byDevice?.length === 0 && (
         <View style={styles.empty}>
+          <View style={styles.emptyIcon}>
+            <Sprout size={30} color={colors.primary} strokeWidth={1.6} />
+          </View>
           <Text style={styles.emptyText}>No data yet</Text>
-          <Text style={styles.emptySubtext}>Add devices and service logs to see analytics</Text>
+          <Text style={styles.emptySubtext}>
+            Add devices and service logs to see your spending and care history.
+          </Text>
         </View>
       )}
     </ScrollView>
@@ -245,221 +279,261 @@ export default function AnalyticsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.bg,
   },
   content: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: spacing.md,
+    paddingBottom: spacing.xxl,
+    width: '100%',
+    maxWidth: 960,
+    alignSelf: 'center',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.bg,
   },
   loadingText: {
-    color: '#666',
-    fontSize: 16,
+    ...type.body,
+    color: colors.muted,
   },
   summaryRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 16,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   summaryCard: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
+    minWidth: 150,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    padding: spacing.md,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: colors.border,
+    ...shadows.soft,
   },
   summaryLabel: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    ...type.label,
+    fontSize: 10,
+    marginBottom: spacing.xs,
   },
   summaryValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    fontFamily: fonts.bodyBold,
+    fontSize: 19,
+    lineHeight: 25,
+    color: colors.primary,
   },
   section: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: colors.border,
+    ...shadows.soft,
+  },
+  sectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    ...type.h4,
+    flex: 1,
   },
   alertCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: spacing.md,
     padding: 12,
-    backgroundColor: '#fafafa',
-    borderRadius: 10,
-    marginBottom: 8,
+    backgroundColor: colors.row,
+    borderRadius: radii.md,
+    marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: colors.border,
   },
   alertInfo: {
     flex: 1,
+    minWidth: 0,
   },
   alertTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontFamily: fonts.bodySemibold,
+    fontSize: 14,
+    color: colors.text,
   },
   alertSub: {
-    fontSize: 13,
-    color: '#666',
+    ...type.small,
+    fontSize: 12,
     marginTop: 2,
   },
   alertStatus: {
     alignItems: 'flex-end',
+    flexShrink: 1,
   },
   statusText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: fonts.bodySemibold,
+    fontSize: 12,
     marginBottom: 2,
+    textAlign: 'right',
   },
   alertDate: {
-    fontSize: 12,
-    color: '#999',
+    ...type.small,
+    fontSize: 11,
+    textAlign: 'right',
   },
   categoryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: spacing.md,
     padding: 12,
-    backgroundColor: '#fafafa',
-    borderRadius: 10,
-    marginBottom: 8,
+    backgroundColor: colors.row,
+    borderRadius: radii.md,
+    marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: colors.border,
   },
   categoryInfo: {
     flex: 1,
+    minWidth: 0,
   },
   categoryName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontFamily: fonts.bodySemibold,
+    fontSize: 14,
+    color: colors.text,
   },
   categoryCount: {
-    fontSize: 13,
-    color: '#666',
+    ...type.small,
+    fontSize: 12,
     marginTop: 2,
   },
   categoryCosts: {
     alignItems: 'flex-end',
+    flexShrink: 1,
   },
   categoryCost: {
-    fontSize: 13,
-    color: '#333',
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textBody,
     marginTop: 2,
+    textAlign: 'right',
   },
   deviceCostRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.sm,
     padding: 12,
-    backgroundColor: '#fafafa',
-    borderRadius: 10,
-    marginBottom: 8,
+    backgroundColor: colors.row,
+    borderRadius: radii.md,
+    marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: colors.border,
   },
   deviceCostInfo: {
     flex: 1,
+    minWidth: 0,
   },
   deviceCostName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontFamily: fonts.bodySemibold,
+    fontSize: 14,
+    color: colors.text,
   },
   deviceCostMeta: {
-    fontSize: 12,
-    color: '#999',
+    ...type.small,
+    fontSize: 11,
     marginTop: 2,
   },
   deviceCostAmounts: {
     alignItems: 'flex-end',
+    flexShrink: 1,
   },
   deviceTotal: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    fontFamily: fonts.bodyBold,
+    fontSize: 13,
+    color: colors.text,
+    textAlign: 'right',
   },
   deviceBreakdown: {
-    fontSize: 12,
-    color: '#666',
+    ...type.small,
+    fontSize: 11,
     marginTop: 2,
+    textAlign: 'right',
   },
   techCard: {
-    backgroundColor: '#fafafa',
-    borderRadius: 10,
+    backgroundColor: colors.row,
+    borderRadius: radii.md,
     padding: 12,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: colors.border,
   },
   techHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: spacing.sm,
   },
   techName: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontFamily: fonts.bodySemibold,
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
   },
   techVisits: {
-    fontSize: 12,
-    color: '#007AFF',
-    fontWeight: '600',
+    fontFamily: fonts.bodySemibold,
+    fontSize: 11,
+    color: colors.primary,
   },
   techPerson: {
-    fontSize: 13,
-    color: '#333',
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textBody,
     marginTop: 4,
   },
   techContact: {
-    fontSize: 13,
-    color: '#007AFF',
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.primary,
     marginTop: 4,
   },
   techDevices: {
-    fontSize: 12,
-    color: '#666',
+    ...type.small,
+    fontSize: 11,
     marginTop: 4,
   },
   techLastVisit: {
-    fontSize: 12,
-    color: '#999',
+    ...type.small,
+    fontSize: 11,
     marginTop: 2,
   },
   empty: {
     alignItems: 'center',
-    marginTop: 40,
-    padding: 20,
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+  },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
   },
   emptyText: {
-    fontSize: 18,
-    color: '#999',
+    ...type.h3,
+    textAlign: 'center',
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#bbb',
-    marginTop: 4,
+    ...type.small,
+    textAlign: 'center',
+    maxWidth: 380,
+    marginTop: spacing.xs,
   },
 });

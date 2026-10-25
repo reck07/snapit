@@ -1,12 +1,12 @@
 /**
  * Frontend API Client for SnapIt Backend
- * 
+ *
  * Replaces direct Context.dev SDK usage with backend proxy calls.
  * Backend runs on http://localhost:3001 (or configured API_URL)
  */
 
-const API_BASE = __DEV__ 
-  ? 'http://localhost:3001'  // Local backend
+const API_BASE = __DEV__
+  ? 'http://localhost:3001' // Local backend
   : 'https://your-production-backend.com'; // Production
 
 async function request(endpoint, options = {}) {
@@ -45,7 +45,7 @@ export async function searchProducts(query, options = {}) {
  * Scrape a specific product URL for detailed information
  * Calls POST /api/scrape-product
  */
-export async function scrapeProduct(url, options = {}) {
+export async function scrapeProduct(url) {
   return request('/api/scrape-product', {
     method: 'POST',
     body: JSON.stringify({ url }),

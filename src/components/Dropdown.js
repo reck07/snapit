@@ -1,42 +1,51 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  FlatList,
-  StyleSheet,
-} from 'react-native';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, Modal, FlatList, StyleSheet } from 'react-native';
+import { Check, ChevronDown } from 'lucide-react-native';
+import { colors, fonts, radii, shadows, spacing } from '../theme';
 
-export default function Dropdown({ items, selectedValue, onValueChange, placeholder, disabled }) {
+export default function Dropdown({
+  items,
+  selectedValue,
+  onValueChange,
+  placeholder,
+  disabled,
+  pill = false,
+}) {
   const [open, setOpen] = useState(false);
-  const selected = items.find((i) => i.value === selectedValue);
+  const selected = items.find(i => i.value === selectedValue);
 
   return (
     <View>
       <TouchableOpacity
-        style={[styles.field, disabled && styles.fieldDisabled]}
+        style={[styles.field, pill && styles.fieldPill, disabled && styles.fieldDisabled]}
         onPress={() => {
           if (!disabled) setOpen(true);
         }}
+        accessibilityRole="button"
+        accessibilityLabel={selected ? selected.label : placeholder || 'Select'}
       >
-        <Text style={selected ? styles.fieldText : styles.fieldPlaceholder}>
-          {selected ? selected.label : placeholder || 'Select...'}
+        <Text
+          style={selected ? styles.fieldText : styles.fieldPlaceholder}
+          numberOfLines={1}
+        >
+          {selected ? selected.label : placeholder || 'Select…'}
         </Text>
-        <Text style={styles.chevron}>▾</Text>
+        <ChevronDown size={16} color={colors.muted} strokeWidth={1.8} />
       </TouchableOpacity>
 
-      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <TouchableOpacity
-          style={styles.backdrop}
-          activeOpacity={1}
-          onPress={() => setOpen(false)}
-        >
+      <Modal
+        visible={open}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setOpen(false)}
+      >
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={() => setOpen(false)}>
           <TouchableOpacity activeOpacity={1} style={styles.sheet} onPress={() => {}}>
             <Text style={styles.sheetTitle}>{placeholder || 'Select'}</Text>
             <FlatList
               data={items}
-              keyExtractor={(item) => String(item.value)}
+              keyExtractor={item => String(item.value)}
+              showsVerticalScrollIndicator={false}
               renderItem={({ item }) => {
                 const isSelected = item.value === selectedValue;
                 return (
@@ -47,10 +56,15 @@ export default function Dropdown({ items, selectedValue, onValueChange, placehol
                       setOpen(false);
                     }}
                   >
-                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                    <Text
+                      style={[styles.optionText, isSelected && styles.optionTextSelected]}
+                      numberOfLines={1}
+                    >
                       {item.label}
                     </Text>
-                    {isSelected ? <Text style={styles.check}>✓</Text> : null}
+                    {isSelected ? (
+                      <Check size={16} color={colors.primary} strokeWidth={2} />
+                    ) : null}
                   </TouchableOpacity>
                 );
               }}
@@ -67,67 +81,84 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radii.sm,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    minHeight: 48,
+    ...shadows.soft,
+  },
+  fieldPill: {
+    borderRadius: radii.full,
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
+  },
+  fieldDisabled: {
+    opacity: 0.55,
   },
   fieldText: {
-    fontSize: 16,
-    color: '#1a1a1a',
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.text,
   },
   fieldPlaceholder: {
-    fontSize: 16,
-    color: '#999',
-  },
-  chevron: {
-    fontSize: 14,
-    color: '#666',
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.muted,
   },
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: colors.overlay,
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.lg,
   },
   sheet: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    maxHeight: 360,
-    paddingBottom: 8,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    maxHeight: 420,
+    paddingBottom: spacing.sm,
+    width: '100%',
+    maxWidth: 420,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.deep,
   },
   sheetTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
-    padding: 16,
+    fontFamily: fonts.heading,
+    fontSize: 18,
+    lineHeight: 25,
+    color: colors.text,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border,
   },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f2',
+    borderBottomColor: colors.border,
   },
   optionSelected: {
-    backgroundColor: '#f0f7ff',
+    backgroundColor: colors.primarySoft,
   },
   optionText: {
-    fontSize: 16,
-    color: '#333',
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.textBody,
   },
   optionTextSelected: {
-    color: '#007AFF',
-    fontWeight: '600',
-  },
-  check: {
-    fontSize: 16,
-    color: '#007AFF',
+    fontFamily: fonts.bodySemibold,
+    color: colors.primary,
   },
 });

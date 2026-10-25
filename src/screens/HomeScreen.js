@@ -1,30 +1,256 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   TextInput,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
-import { getProducts, deleteProduct, getBrands, getSummary, refreshBrandsAndTypesFromApi } from '../database/database';
+import {
+  BarChart3,
+  Download,
+  RefreshCw,
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  Sprout,
+  ChevronRight,
+} from 'lucide-react-native';
+import {
+  getProducts,
+  deleteProduct,
+  getBrands,
+  getSummary,
+  refreshBrandsAndTypesFromApi,
+} from '../database/database';
 import { confirmAction } from '../utils/confirm';
 import { exportAllCSV } from '../utils/exportCSV';
 import Dropdown from '../components/Dropdown';
+import { PressableScale, FadeIn, Spin } from '../components/motion';
+import { CURRENCY_OPTIONS, useCurrency } from '../context/CurrencyContext';
+import {
+  colors,
+  fonts,
+  radii,
+  shadows,
+  spacing,
+  type,
+  transition,
+  deviceColumns,
+  contentMaxWidth,
+} from '../theme';
+
+const WARRANTY_TONES = {
+  muted: { bg: colors.row, fg: colors.muted },
+  danger: { bg: colors.dangerSoft, fg: colors.danger },
+  warning: { bg: colors.warningSoft, fg: colors.secondary },
+  success: { bg: colors.successSoft, fg: colors.successDark },
+};
+
+const CURRENCY_ITEMS = CURRENCY_OPTIONS.map(option => ({
+  label: option.label,
+  value: option.value,
+}));
+
+function getWarrantyStatus(daysLeft) {
+  if (daysLeft === null || daysLeft === undefined)
+    return { text: 'No warranty info', tone: 'muted' };
+  if (daysLeft < 0) return { text: 'Warranty expired', tone: 'danger' };
+  if (daysLeft <= 7) return { text: `Expires in ${daysLeft} days`, tone: 'danger' };
+  if (daysLeft <= 30) return { text: `Expires in ${daysLeft} days`, tone: 'warning' };
+  return { text: `Still covered · ${daysLeft} days`, tone: 'success' };
+}
+
+function formatDateDisplay(date, precision) {
+  if (!date) return 'Unknown';
+  if (precision === 'year_only') return date.split('-')[0];
+  if (precision === 'unknown') return 'Unknown';
+  return date;
+}
+
+function getDeviceIcon(typeName) {
+  const name = (typeName || '').toLowerCase();
+  if (name.includes('smartphone') || name.includes('phone') || name.includes('mobile'))
+    return '📱';
+  if (name.includes('tablet') || name.includes('ipad')) return '📟';
+  if (name.includes('laptop') || name.includes('notebook') || name.includes('macbook'))
+    return '💻';
+  if (name.includes('monitor') || name.includes('display')) return '🖥️';
+  if (name.includes('watch') || name.includes('wearable')) return '⌚';
+  if (name.includes('ac') || name.includes('air')) return '❄️';
+  if (name.includes('tv') || name.includes('television')) return '📺';
+  if (name.includes('printer')) return '🖨️';
+  if (name.includes('fridge') || name.includes('refrigerator')) return '🧊';
+  return '📱';
+}
+
+function IconButton({ label, onPress, disabled, children }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      onPress={onPress}
+      disabled={disabled}
+      onHoverIn={() => setHovered(true)}
+      onHoverOut={() => setHovered(false)}
+      style={[
+        styles.iconButton,
+        transition,
+        hovered && !disabled && styles.iconButtonHover,
+        disabled && styles.iconButtonDisabled,
+      ]}
+    >
+      {children}
+    </Pressable>
+  );
+}
+
+function StatCard({ label, value, compact }) {
+  return (
+    <View style={styles.statCard}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <Text
+        style={[styles.statValue, compact && styles.statValueCompact]}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function EmptyState({ onAdd }) {
+  return (
+    <View style={styles.empty}>
+      <View style={styles.emptyIcon}>
+        <Sprout size={36} color={colors.primary} strokeWidth={1.6} />
+      </View>
+      <Text style={styles.emptyText}>No devices yet</Text>
+      <Text style={styles.emptySubtext}>
+        Add your first device to begin a calm, lasting record of the things you own.
+      </Text>
+      <PressableScale
+        style={styles.emptyButton}
+        hoverStyle={styles.primaryHover}
+        onPress={onAdd}
+        accessibilityLabel="Add your first device"
+      >
+        <Plus size={16} color={colors.white} strokeWidth={2} />
+        <Text style={styles.emptyButtonText}>Add Device</Text>
+      </PressableScale>
+    </View>
+  );
+}
+
+function DeviceCard({ item, index, cardWidth, navigation, onDelete }) {
+  const [hovered, setHovered] = useState(false);
+  const warranty = getWarrantyStatus(item.warranty_days_left);
+  const tone = WARRANTY_TONES[warranty.tone];
+  const brandName = item.brands?.name || '';
+  const typeName = item.device_types?.name || '';
+
+  return (
+    <FadeIn delay={Math.min(index, 8) * 55} style={{ width: cardWidth }}>
+      <View style={[styles.card, transition, hovered && styles.cardHover]}>
+        <Pressable
+          style={styles.cardMain}
+          onPress={() => navigation.navigate('DeviceHistory', { productId: item.id })}
+          onHoverIn={() => setHovered(true)}
+          onHoverOut={() => setHovered(false)}
+          accessibilityLabel={`Open ${item.model_name}`}
+        >
+          <View style={styles.cardTop}>
+            <View
+              style={[
+                styles.iconWrap,
+                { backgroundColor: index % 2 ? colors.secondarySoft : colors.primarySoft },
+              ]}
+            >
+              <Text style={styles.cardIcon}>{getDeviceIcon(typeName)}</Text>
+            </View>
+            <View style={styles.cardInfo}>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {item.model_name}
+              </Text>
+              <Text style={styles.cardSubtitle} numberOfLines={1}>
+                {[brandName, typeName].filter(Boolean).join(' · ') || 'Uncategorized'}
+              </Text>
+            </View>
+            <ChevronRight size={18} color={colors.muted} strokeWidth={1.8} />
+          </View>
+
+          <View style={styles.cardMetaRow}>
+            {!!item.purchase_date && (
+              <Text style={styles.cardDate}>
+                Purchased {formatDateDisplay(item.purchase_date, item.purchase_date_precision)}
+              </Text>
+            )}
+            {!!item.warranty_expiry_date && (
+              <View style={[styles.warrantyBadge, { backgroundColor: tone.bg }]}>
+                <Text style={[styles.warrantyBadgeText, { color: tone.fg }]}>{warranty.text}</Text>
+              </View>
+            )}
+          </View>
+        </Pressable>
+
+        <View style={styles.cardActions}>
+          <Pressable
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('AddDevice', { productId: item.id })}
+            accessibilityLabel={`Edit ${item.model_name}`}
+          >
+            <Pencil size={16} color={colors.muted} strokeWidth={1.8} />
+          </Pressable>
+          <Pressable
+            style={styles.actionButton}
+            onPress={() => onDelete(item)}
+            accessibilityLabel={`Delete ${item.model_name}`}
+          >
+            <Trash2 size={16} color={colors.danger} strokeWidth={1.8} />
+          </Pressable>
+        </View>
+      </View>
+    </FadeIn>
+  );
+}
 
 export default function HomeScreen({ navigation }) {
+  const { width } = useWindowDimensions();
+  const { currency, setCurrency } = useCurrency();
+  const compact = width < 720;
+  const numColumns = deviceColumns(width);
+  const pageWidth = Math.min(width, contentMaxWidth);
+  const cardWidth =
+    (pageWidth - spacing.md * 2 - spacing.md * (numColumns - 1)) / numColumns;
+
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [brandId, setBrandId] = useState(null);
-  const [summary, setSummary] = useState({ deviceCount: 0, serviceCount: 0, totalSpent: 0 });
+  const [summary, setSummary] = useState({
+    deviceCount: 0,
+    serviceCount: 0,
+    totalSpent: 0,
+  });
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadBrands();
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   async function loadBrands() {
     try {
@@ -33,18 +259,11 @@ export default function HomeScreen({ navigation }) {
       setError('');
     } catch (e) {
       console.error('loadBrands error:', e);
-      setError(`Database error: ${e.message}. If on web, try force-releasing the lock from the lock screen.`);
+      setError(`Database error: ${e.message}`);
     }
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      loadProducts();
-      loadSummary();
-    }, [])
-  );
-
-  async function loadProducts() {
+  const loadProducts = useCallback(async () => {
     try {
       const data = await getProducts(search, brandId);
       setProducts(data);
@@ -53,13 +272,24 @@ export default function HomeScreen({ navigation }) {
       console.error('loadProducts error:', e);
       setError(`Database error: ${e.message}`);
     }
-  }
+  }, [search, brandId]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProducts();
+      loadSummary();
+    }, [loadProducts])
+  );
 
   async function loadSummary() {
     try {
       const data = await getSummary();
       setSummary(data);
-    } catch (e) {
+    } catch {
       // non-fatal
     }
   }
@@ -72,13 +302,14 @@ export default function HomeScreen({ navigation }) {
       const result = await refreshBrandsAndTypesFromApi();
       if (result.success) {
         await loadBrands();
-        setError('Brands & types updated from API!');
-        setTimeout(() => setError(''), 3000);
+        setError('');
+        setNotice(`Catalog synced: ${result.brandsCount} brands, ${result.typesCount} types`);
+        setTimeout(() => setNotice(''), 4000);
       } else {
         setError(`Refresh failed: ${result.error}`);
       }
     } catch (e) {
-      setError('Failed to refresh from API');
+      setError(`Failed to refresh catalog: ${e.message}`);
     } finally {
       setRefreshing(false);
     }
@@ -89,366 +320,480 @@ export default function HomeScreen({ navigation }) {
       'Delete Device',
       `Remove "${product.model_name}" and all its service history?`,
       async () => {
-        await deleteProduct(product.id);
-        loadProducts();
-        loadSummary();
+        try {
+          await deleteProduct(product.id);
+          await loadProducts();
+          await loadSummary();
+        } catch (e) {
+          setError(`Could not delete device: ${e.message}`);
+        }
       }
     );
   }
 
-  function getWarrantyStatus(daysLeft) {
-    if (daysLeft === null || daysLeft === undefined) return { text: 'No warranty info', color: '#999' };
-    if (daysLeft < 0) return { text: 'Warranty expired', color: '#e74c3c' };
-    if (daysLeft <= 7) return { text: `Expires in ${daysLeft} days`, color: '#e74c3c' };
-    if (daysLeft <= 30) return { text: `Expires in ${daysLeft} days`, color: '#f39c12' };
-    return { text: `Still covered (${daysLeft} days left)`, color: '#27ae60' };
-  }
-
-  function formatDateDisplay(date, precision) {
-    if (!date) return 'Unknown';
-    if (precision === 'year_only') {
-      return date.split('-')[0];
-    }
-    if (precision === 'unknown') {
-      return 'Unknown';
-    }
-    return date;
-  }
-
-  function getDeviceIcon(typeName) {
-    const name = (typeName || '').toLowerCase();
-    if (name.includes('smartphone') || name.includes('phone') || name.includes('mobile')) return '📱';
-    if (name.includes('tablet') || name.includes('ipad')) return '📟';
-    if (name.includes('laptop') || name.includes('notebook') || name.includes('macbook')) return '💻';
-    if (name.includes('monitor') || name.includes('display')) return '🖥️';
-    if (name.includes('watch') || name.includes('wearable')) return '⌚';
-    if (name.includes('ac') || name.includes('air')) return '❄️';
-    if (name.includes('tv') || name.includes('television')) return '📺';
-    if (name.includes('printer')) return '🖨️';
-    if (name.includes('fridge') || name.includes('refrigerator')) return '🧊';
-    return '📱';
-  }
+  const brandItems = [
+    { label: 'All Brands', value: null },
+    ...brands.map(b => ({ label: b.name, value: b.id })),
+  ];
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Search devices, brands, or types..."
-        placeholderTextColor="#999"
-        value={search}
-        onChangeText={setSearch}
-      />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.page}>
+        <View style={[styles.topBar, compact && styles.topBarCompact]}>
+          <View style={styles.brandBlock}>
+            <Text style={styles.logo}>Snap It</Text>
+            <Text style={styles.logoSub}>Product managing</Text>
+          </View>
 
-      <View style={styles.toolbar}>
-        <View style={styles.filterWrap}>
-          <Dropdown
-            items={[{ label: 'All Brands', value: null }, ...brands.map((b) => ({ label: b.name, value: b.id }))]}
-            selectedValue={brandId}
-            onValueChange={setBrandId}
-            placeholder="All Brands"
+          <View style={[styles.topActions, compact && styles.topActionsCompact]}>
+            <View style={styles.brandPicker}>
+              <Dropdown
+                pill
+                items={brandItems}
+                selectedValue={brandId}
+                onValueChange={setBrandId}
+                placeholder="All Brands"
+              />
+            </View>
+            <IconButton
+              label="Open analytics"
+              onPress={() => navigation.navigate('Analytics')}
+            >
+              <BarChart3 size={18} color={colors.muted} strokeWidth={1.8} />
+            </IconButton>
+            <IconButton label="Export CSV" onPress={exportAllCSV}>
+              <Download size={18} color={colors.muted} strokeWidth={1.8} />
+            </IconButton>
+            <IconButton
+              label="Sync catalog"
+              onPress={handleRefreshBrands}
+              disabled={refreshing}
+            >
+              <Spin spinning={refreshing}>
+                <RefreshCw
+                  size={18}
+                  color={refreshing ? colors.primary : colors.muted}
+                  strokeWidth={1.8}
+                />
+              </Spin>
+            </IconButton>
+          </View>
+        </View>
+
+        <View style={styles.searchWrap}>
+          <Search size={18} color={colors.muted} strokeWidth={1.8} />
+          <TextInput
+            style={styles.searchBar}
+            placeholder="Search your devices…"
+            placeholderTextColor={colors.muted}
+            value={searchInput}
+            onChangeText={setSearchInput}
           />
         </View>
-        <TouchableOpacity style={styles.exportButton} onPress={() => navigation.navigate('Analytics')}>
-          <Text style={styles.exportButtonText}>📊 Analytics</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.exportButton} onPress={exportAllCSV}>
-          <Text style={styles.exportButtonText}>⬇ Export CSV</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.exportButton, refreshing && styles.exportButtonDisabled]} 
-          onPress={handleRefreshBrands}
-          disabled={refreshing}
-        >
-          <Text style={styles.exportButtonText}>{refreshing ? '⟳ Refreshing...' : '🔄 Refresh API'}</Text>
-        </TouchableOpacity>
-      </View>
 
-      <View style={styles.statsRow}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{summary.deviceCount}</Text>
-          <Text style={styles.statLabel}>Devices</Text>
+        <View style={styles.statsRow}>
+          <StatCard label="Devices" value={summary.deviceCount} compact={compact} />
+          <StatCard label="Services" value={summary.serviceCount} compact={compact} />
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{summary.serviceCount}</Text>
-          <Text style={styles.statLabel}>Services</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>${Number(summary.totalSpent).toFixed(2)}</Text>
-          <Text style={styles.statLabel}>Total Spent</Text>
-        </View>
-      </View>
 
-      {error ? (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorBannerText}>{error}</Text>
-        </View>
-      ) : null}
-
-      <FlatList
-        data={products}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>No devices yet</Text>
-            <Text style={styles.emptySubtext}>Tap + to add your first device</Text>
+        {notice ? (
+          <View style={styles.noticeBanner}>
+            <Text style={styles.noticeBannerText}>{notice}</Text>
           </View>
-        }
-        renderItem={({ item }) => {
-          const warranty = getWarrantyStatus(item.warranty_days_left);
-          // Supabase returns nested objects: brands.name and device_types.name
-          const brandName = item.brands?.name || '';
-          const typeName = item.device_types?.name || '';
-          return (
-            <View style={styles.card}>
-              <TouchableOpacity
-                style={styles.cardMain}
-                onPress={() => navigation.navigate('DeviceHistory', { productId: item.id })}
-              >
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardIcon}>{getDeviceIcon(typeName)}</Text>
-                  <View style={styles.cardInfo}>
-                    <Text style={styles.cardTitle}>{item.model_name}</Text>
-                    <Text style={styles.cardSubtitle}>
-                      {brandName} · {typeName}
-                    </Text>
-                    {item.warranty_expiry_date && (
-                      <View style={styles.warrantyBadgeRow}>
-                        <View style={[styles.warrantyBadge, { backgroundColor: warranty.color }]}>
-                          <Text style={styles.warrantyBadgeText}>{warranty.text}</Text>
-                        </View>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.arrow}>›</Text>
-                </View>
-                {item.purchase_date && (
-                  <Text style={styles.cardDate}>
-                    Purchased: {formatDateDisplay(item.purchase_date, item.purchase_date_precision)}
-                  </Text>
-                )}
-              </TouchableOpacity>
-              <View style={styles.cardActions}>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => navigation.navigate('AddDevice', { productId: item.id })}
-                  hitSlop={8}
-                >
-                  <Text style={styles.actionText}>✏️</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => handleDelete(item)}
-                  hitSlop={8}
-                >
-                  <Text style={styles.actionText}>🗑</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        }}
-      />
+        ) : null}
 
-      <TouchableOpacity
+        {error ? (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>{error}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.listHeader}>
+          <Text style={styles.listTitle}>Your devices</Text>
+          <View style={styles.listMeta}>
+            <Text style={styles.listCount}>
+              {products.length} {products.length === 1 ? 'device' : 'devices'}
+            </Text>
+            <View style={styles.currencyPicker}>
+              <Dropdown
+                pill
+                items={CURRENCY_ITEMS}
+                selectedValue={currency}
+                onValueChange={setCurrency}
+                placeholder="Currency"
+              />
+            </View>
+          </View>
+        </View>
+
+        <FlatList
+          key={`device-grid-${numColumns}`}
+          data={products}
+          keyExtractor={item => item.id.toString()}
+          numColumns={numColumns}
+          columnWrapperStyle={numColumns > 1 ? styles.columnWrapper : undefined}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={<EmptyState onAdd={() => navigation.navigate('AddDevice')} />}
+          renderItem={({ item, index }) => (
+            <DeviceCard
+              item={item}
+              index={index}
+              cardWidth={cardWidth}
+              navigation={navigation}
+              onDelete={handleDelete}
+            />
+          )}
+        />
+      </View>
+
+      <PressableScale
+        containerStyle={styles.fabWrap}
         style={styles.fab}
+        hoverStyle={styles.fabHover}
         onPress={() => navigation.navigate('AddDevice')}
+        accessibilityLabel="Add device"
       >
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
-    </View>
+        <Plus size={26} color={colors.white} strokeWidth={2} />
+      </PressableScale>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.bg,
   },
-  searchBar: {
-    margin: 16,
-    marginBottom: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+  page: {
+    flex: 1,
+    width: '100%',
+    maxWidth: contentMaxWidth,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.md,
   },
-  toolbar: {
+  topBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginHorizontal: 16,
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  filterWrap: {
+  topBarCompact: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+  brandBlock: {
+    flexShrink: 0,
+  },
+  logo: {
+    fontFamily: fonts.display,
+    fontSize: 26,
+    lineHeight: 32,
+    color: colors.text,
+    letterSpacing: 0.2,
+  },
+  logoSub: {
+    ...type.label,
+    fontSize: 10,
+    letterSpacing: 1.3,
+    marginTop: 1,
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: spacing.sm,
     flex: 1,
   },
-  exportButton: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+  topActionsCompact: {
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  brandPicker: {
+    width: 190,
+    minWidth: 150,
+    flexShrink: 1,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
   },
-  exportButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#007AFF',
+  iconButtonHover: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
   },
-  exportButtonDisabled: {
-    opacity: 0.6,
+  iconButtonDisabled: {
+    opacity: 0.55,
+  },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+    height: 48,
+  },
+  searchBar: {
+    flex: 1,
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.text,
+    paddingVertical: 0,
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginHorizontal: 16,
-    marginBottom: 8,
+    gap: spacing.md,
+    marginBottom: spacing.md,
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: '#eee',
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    minHeight: 72,
+    justifyContent: 'center',
+    ...shadows.soft,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
+    ...type.label,
+    fontSize: 9,
+    marginBottom: 2,
   },
-  list: {
-    padding: 16,
-    paddingTop: 8,
-    paddingBottom: 80,
+  statValue: {
+    ...type.number,
+    fontSize: 22,
+    lineHeight: 27,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+  statValueCompact: {
+    fontSize: 19,
+    lineHeight: 24,
+  },
+  noticeBanner: {
+    backgroundColor: colors.successSoft,
+    borderRadius: radii.md,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#D6E6CB',
+  },
+  noticeBannerText: {
+    ...type.small,
+    color: colors.successDark,
+  },
+  errorBanner: {
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radii.md,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: colors.dangerBorder,
+  },
+  errorBannerText: {
+    ...type.small,
+    color: colors.danger,
+  },
+  listHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  listTitle: {
+    fontFamily: fonts.heading,
+    fontSize: 20,
+    lineHeight: 27,
+    color: colors.text,
+    flexShrink: 1,
+  },
+  listCount: {
+    ...type.small,
+    fontSize: 12,
+  },
+  listMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexShrink: 0,
+  },
+  currencyPicker: {
+    width: 108,
+  },
+  list: {
+    paddingBottom: 100,
+    flexGrow: 1,
+  },
+  columnWrapper: {
+    gap: spacing.md,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    ...shadows.soft,
+  },
+  cardHover: {
+    transform: [{ translateY: -4 }],
+    borderColor: colors.borderStrong,
+    ...shadows.medium,
   },
   cardMain: {
     flex: 1,
+    minWidth: 0,
   },
-  cardHeader: {
+  cardTop: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
+  },
+  iconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardIcon: {
-    fontSize: 32,
-    marginRight: 12,
+    fontSize: 27,
   },
   cardInfo: {
     flex: 1,
+    minWidth: 0,
   },
   cardTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontFamily: fonts.heading,
+    fontSize: 16,
+    lineHeight: 22,
+    color: colors.text,
   },
   cardSubtitle: {
-    fontSize: 14,
-    color: '#666',
+    ...type.small,
     marginTop: 2,
   },
-  cardDate: {
-    fontSize: 13,
-    color: '#999',
-    marginTop: 8,
-  },
-  arrow: {
-    fontSize: 24,
-    color: '#ccc',
-    marginLeft: 4,
-  },
-  cardActions: {
-    marginLeft: 12,
+  cardMetaRow: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
-  actionButton: {
-    padding: 6,
-  },
-  actionText: {
-    fontSize: 18,
-  },
-  warrantyBadgeRow: {
-    marginTop: 4,
+  cardDate: {
+    ...type.small,
+    fontSize: 12,
   },
   warrantyBadge: {
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    alignSelf: 'flex-start',
+    borderRadius: radii.full,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
   warrantyBadgeText: {
+    fontFamily: fonts.bodySemibold,
     fontSize: 11,
-    color: '#fff',
-    fontWeight: '600',
+    lineHeight: 15,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginLeft: spacing.sm,
+  },
+  actionButton: {
+    width: 34,
+    height: 34,
+    borderRadius: radii.full,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   empty: {
     alignItems: 'center',
-    marginTop: 80,
+    justifyContent: 'center',
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.lg,
   },
-  emptyText: {
-    fontSize: 18,
-    color: '#999',
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#bbb',
-    marginTop: 4,
-  },
-  errorBanner: {
-    backgroundColor: '#fff3f3',
-    borderRadius: 10,
-    marginHorizontal: 16,
-    marginBottom: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#f5c6c6',
-  },
-  errorBannerText: {
-    color: '#c0392b',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#007AFF',
+  emptyIcon: {
+    width: 84,
+    height: 84,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
+    marginBottom: spacing.md,
   },
-  fabText: {
-    fontSize: 28,
-    color: '#fff',
-    lineHeight: 30,
+  emptyText: {
+    fontFamily: fonts.heading,
+    fontSize: 20,
+    lineHeight: 28,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  emptySubtext: {
+    ...type.body,
+    color: colors.muted,
+    textAlign: 'center',
+    maxWidth: 380,
+    marginTop: spacing.xs,
+  },
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 12,
+    marginTop: spacing.lg,
+    ...shadows.soft,
+  },
+  primaryHover: {
+    backgroundColor: colors.primaryDark,
+  },
+  emptyButtonText: {
+    ...type.button,
+    color: colors.white,
+  },
+  fabWrap: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: radii.full,
+    ...shadows.medium,
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabHover: {
+    backgroundColor: colors.primaryDark,
   },
 });

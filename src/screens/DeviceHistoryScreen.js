@@ -1,57 +1,52 @@
-import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-} from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Pencil, Plus, Trash2 } from 'lucide-react-native';
 import { getProductById, getServiceLogs, deleteServiceLog } from '../database/database';
 import { confirmAction } from '../utils/confirm';
+import { PressableScale } from '../components/motion';
+import { useCurrency } from '../context/CurrencyContext';
+import { colors, fonts, radii, shadows, spacing, type } from '../theme';
 
 export default function DeviceHistoryScreen({ route, navigation }) {
   const { productId } = route.params;
+  const { formatCurrency } = useCurrency();
   const [product, setProduct] = useState(null);
   const [logs, setLogs] = useState([]);
   const [error, setError] = useState('');
 
   function getWarrantyStatus(daysLeft) {
-    if (daysLeft === null || daysLeft === undefined) return { text: 'No warranty info', color: '#999' };
-    if (daysLeft < 0) return { text: 'Warranty expired', color: '#e74c3c' };
-    if (daysLeft <= 7) return { text: `Expires in ${daysLeft} days`, color: '#e74c3c' };
-    if (daysLeft <= 30) return { text: `Expires in ${daysLeft} days`, color: '#f39c12' };
-    return { text: `Still covered (${daysLeft} days left)`, color: '#27ae60' };
+    if (daysLeft === null || daysLeft === undefined)
+      return { text: 'No warranty info', color: colors.muted };
+    if (daysLeft < 0) return { text: 'Warranty expired', color: colors.danger };
+    if (daysLeft <= 7) return { text: `Expires in ${daysLeft} days`, color: colors.danger };
+    if (daysLeft <= 30) return { text: `Expires in ${daysLeft} days`, color: colors.secondary };
+    return { text: `Still covered (${daysLeft} days left)`, color: colors.successDark };
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [])
-  );
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       const prod = await getProductById(productId);
       setProduct(prod);
       const data = await getServiceLogs(productId);
       setLogs(data);
       setError('');
-    } catch (e) {
+    } catch {
       setError('Could not load data.');
     }
-  }
+  }, [productId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   function handleDeleteLog(log) {
-    confirmAction(
-      'Delete Entry',
-      'Remove this service record?',
-      async () => {
-        await deleteServiceLog(log.id);
-        loadData();
-      }
-    );
+    confirmAction('Delete Entry', 'Remove this service record?', async () => {
+      await deleteServiceLog(log.id);
+      loadData();
+    });
   }
 
   function formatDateDisplay(date, precision) {
@@ -66,43 +61,39 @@ export default function DeviceHistoryScreen({ route, navigation }) {
   }
 
   function getPrecisionBadge(precision) {
-    if (precision === 'exact') return { text: 'Exact date', color: '#27ae60' };
-    if (precision === 'year_only') return { text: 'Month/Year only', color: '#f39c12' };
-    return { text: 'Approximate', color: '#999' };
-  }
-
-  function formatCurrency(value) {
-    if (value === null || value === undefined || value === '') return null;
-    return `$${parseFloat(value).toFixed(2)}`;
+    if (precision === 'exact') return { text: 'Exact date', color: colors.successDark };
+    if (precision === 'year_only') return { text: 'Month/Year only', color: colors.secondary };
+    return { text: 'Approximate', color: colors.muted };
   }
 
   return (
     <View style={styles.container}>
       {product && (
         <View style={styles.header}>
-          <Text style={styles.headerIcon}>
-            {getDeviceIcon(product.type_name)}
-          </Text>
+          <Text style={styles.headerIcon}>{getDeviceIcon(product.type_name)}</Text>
           <View style={styles.headerInfo}>
             <Text style={styles.headerTitle}>{product.model_name}</Text>
             <Text style={styles.headerSub}>
               {product.brand_name} · {product.type_name}
             </Text>
             <View style={styles.headerDetails}>
-              {product.purchase_date && (
+              {!!product.purchase_date && (
                 <Text style={styles.headerDate}>
-                  Purchased: {formatDateDisplay(product.purchase_date, product.purchase_date_precision)}
+                  Purchased:{' '}
+                  {formatDateDisplay(product.purchase_date, product.purchase_date_precision)}
                 </Text>
               )}
               {product.purchase_price !== null && product.purchase_price !== undefined && (
-                <Text style={styles.headerPrice}>Price: ${product.purchase_price.toFixed(2)}</Text>
+                <Text style={styles.headerPrice}>
+                  Price: {formatCurrency(product.purchase_price) || '—'}
+                </Text>
               )}
-              {product.warranty_expiry_date && (
+              {!!product.warranty_expiry_date && (
                 <Text style={styles.headerWarranty}>
                   {getWarrantyStatus(product.warranty_days_left).text}
                 </Text>
               )}
-              {product.serial_number && (
+              {!!product.serial_number && (
                 <Text style={styles.headerSerial}>S/N: {product.serial_number}</Text>
               )}
             </View>
@@ -112,7 +103,7 @@ export default function DeviceHistoryScreen({ route, navigation }) {
             onPress={() => navigation.navigate('AddDevice', { productId: product.id })}
             hitSlop={8}
           >
-            <Text style={styles.headerEditText}>✏️</Text>
+            <Pencil size={18} color={colors.primary} strokeWidth={1.8} />
           </TouchableOpacity>
         </View>
       )}
@@ -127,7 +118,7 @@ export default function DeviceHistoryScreen({ route, navigation }) {
 
       <FlatList
         data={logs}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={item => item.id.toString()}
         contentContainerStyle={styles.list}
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -139,70 +130,64 @@ export default function DeviceHistoryScreen({ route, navigation }) {
           const precisionBadge = getPrecisionBadge(item.date_precision);
           return (
             <View style={styles.timelineItem}>
-              <View style={[
-                styles.timelineDot,
-                { backgroundColor: precisionBadge.color }
-              ]} />
+              <View style={[styles.timelineDot, { backgroundColor: precisionBadge.color }]} />
               {index < logs.length - 1 && <View style={styles.timelineLine} />}
 
               <View style={styles.logCard}>
                 <View style={styles.logHeader}>
                   <View style={styles.logDateWrap}>
-                    <Text style={styles.logDate}>{formatDateDisplay(item.date, item.date_precision)}</Text>
+                    <Text style={styles.logDate}>
+                      {formatDateDisplay(item.date, item.date_precision)}
+                    </Text>
                     <View style={styles.precisionBadgeRow}>
-                      <View style={[
-                        styles.precisionBadge,
-                        { backgroundColor: precisionBadge.color }
-                      ]}>
+                      <View
+                        style={[styles.precisionBadge, { backgroundColor: precisionBadge.color }]}
+                      >
                         <Text style={styles.precisionBadgeText}>{precisionBadge.text}</Text>
                       </View>
                     </View>
                   </View>
-                  {item.day && <Text style={styles.logDay}>{item.day}</Text>}
-                  {item.time && <Text style={styles.logTime}>{item.time}</Text>}
+                  {!!item.day && <Text style={styles.logDay}>{item.day}</Text>}
+                  {!!item.time && <Text style={styles.logTime}>{item.time}</Text>}
                   <TouchableOpacity
                     style={styles.logEdit}
-                    onPress={() =>
-                      navigation.navigate('AddService', { productId, logId: item.id })
-                    }
+                    onPress={() => navigation.navigate('AddService', { productId, logId: item.id })}
                     hitSlop={8}
                   >
-                    <Text style={styles.logEditText}>✏️</Text>
+                    <Pencil size={15} color={colors.muted} strokeWidth={1.8} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.logDelete}
                     onPress={() => handleDeleteLog(item)}
                     hitSlop={8}
                   >
-                    <Text style={styles.logDeleteText}>🗑</Text>
+                    <Trash2 size={15} color={colors.danger} strokeWidth={1.8} />
                   </TouchableOpacity>
                 </View>
 
-                {item.note && <Text style={styles.logNote}>{item.note}</Text>}
+                {!!item.note && <Text style={styles.logNote}>{item.note}</Text>}
 
                 <View style={styles.logMeta}>
-                  {formatCurrency(item.cost) && (
+                  {!!formatCurrency(item.cost) && (
                     <Text style={styles.logCost}>{formatCurrency(item.cost)}</Text>
                   )}
-                  {item.vendor_name && (
-                    <Text style={styles.logVendor}>🏢 {item.vendor_name}</Text>
-                  )}
-                  {item.repairman_name && (
+                  {!!item.vendor_name && <Text style={styles.logVendor}>🏢 {item.vendor_name}</Text>}
+                  {!!item.repairman_name && (
                     <Text style={styles.logRepairman}>👨‍🔧 {item.repairman_name}</Text>
                   )}
-                  {item.payment_mode && (
+                  {!!item.payment_mode && (
                     <Text style={styles.logPayment}>💳 {item.payment_mode}</Text>
                   )}
-                  {item.next_service_due && (
+                  {!!item.next_service_due && (
                     <Text style={styles.logNextService}>📅 Next: {item.next_service_due}</Text>
                   )}
                 </View>
 
-                {item.repairman_contact && (
+                {!!item.repairman_contact && (
                   <Text style={styles.logContact}>📞 {item.repairman_contact}</Text>
                 )}
 
-                {item.photo_url && (
+                {!!item.photo_url && (
                   <Image source={{ uri: item.photo_url }} style={styles.photo} />
                 )}
               </View>
@@ -211,12 +196,15 @@ export default function DeviceHistoryScreen({ route, navigation }) {
         }}
       />
 
-      <TouchableOpacity
+      <PressableScale
+        containerStyle={styles.fabWrap}
         style={styles.fab}
+        hoverStyle={styles.fabHover}
         onPress={() => navigation.navigate('AddService', { productId })}
+        accessibilityLabel="Add service entry"
       >
-        <Text style={styles.fabText}>+</Text>
-      </TouchableOpacity>
+        <Plus size={26} color={colors.white} strokeWidth={2} />
+      </PressableScale>
     </View>
   );
 }
@@ -238,78 +226,84 @@ function getDeviceIcon(typeName) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.bg,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    padding: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.soft,
   },
   headerIcon: {
-    fontSize: 36,
-    marginRight: 12,
-    marginTop: 4,
+    fontSize: 34,
+    marginRight: spacing.md,
+    marginTop: 2,
   },
   headerInfo: {
     flex: 1,
+    minWidth: 0,
   },
   headerTitle: {
+    fontFamily: fonts.heading,
     fontSize: 20,
-    fontWeight: '700',
-    color: '#1a1a1a',
+    lineHeight: 27,
+    color: colors.text,
   },
   headerSub: {
-    fontSize: 14,
-    color: '#666',
+    ...type.small,
     marginTop: 2,
   },
   headerDetails: {
-    marginTop: 8,
+    marginTop: spacing.sm,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.sm,
   },
   headerDate: {
-    fontSize: 13,
-    color: '#999',
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.muted,
   },
   headerPrice: {
-    fontSize: 13,
-    color: '#27ae60',
-    fontWeight: '600',
+    fontFamily: fonts.bodySemibold,
+    fontSize: 12,
+    color: colors.primary,
   },
   headerWarranty: {
-    fontSize: 13,
-    color: '#007AFF',
-    fontWeight: '600',
+    fontFamily: fonts.bodySemibold,
+    fontSize: 12,
+    color: colors.secondary,
   },
   headerSerial: {
-    fontSize: 12,
-    color: '#999',
+    fontFamily: fonts.body,
+    fontSize: 11,
+    color: colors.muted,
   },
   headerEdit: {
-    padding: 8,
-  },
-  headerEditText: {
-    fontSize: 20,
+    padding: spacing.sm,
+    borderRadius: radii.full,
+    backgroundColor: colors.primarySoft,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#666',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    ...type.label,
+    color: colors.textBody,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   list: {
-    padding: 16,
+    padding: spacing.md,
     paddingTop: 0,
-    paddingBottom: 80,
+    paddingBottom: 100,
+    width: '100%',
+    maxWidth: 820,
+    alignSelf: 'center',
   },
   timelineItem: {
     flexDirection: 'row',
@@ -317,178 +311,173 @@ const styles = StyleSheet.create({
     minHeight: 60,
   },
   timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#007AFF',
-    marginTop: 18,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+    marginTop: 22,
     marginRight: 12,
     marginLeft: 4,
   },
   timelineLine: {
     position: 'absolute',
-    left: 9,
-    top: 30,
-    bottom: 0,
+    left: 8,
+    top: 34,
+    bottom: -4,
     width: 2,
-    backgroundColor: '#d0d0d0',
+    backgroundColor: colors.borderStrong,
   },
   logCard: {
     flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    ...shadows.soft,
   },
   logHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 6,
+    gap: 6,
   },
   logDateWrap: {
     flex: 1,
+    minWidth: 0,
   },
   logDate: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1a1a1a',
+    fontFamily: fonts.headingRegular,
+    fontSize: 14,
+    color: colors.text,
   },
   precisionBadgeRow: {
     marginTop: 4,
   },
   precisionBadge: {
-    borderRadius: 8,
+    borderRadius: radii.full,
     paddingHorizontal: 8,
     paddingVertical: 2,
     alignSelf: 'flex-start',
   },
   precisionBadgeText: {
+    fontFamily: fonts.bodySemibold,
     fontSize: 10,
-    color: '#fff',
-    fontWeight: '600',
+    color: colors.white,
   },
   logDay: {
-    fontSize: 13,
-    color: '#666',
-    marginLeft: 8,
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.muted,
   },
   logTime: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#007AFF',
-    marginLeft: 8,
+    fontFamily: fonts.bodySemibold,
+    fontSize: 12,
+    color: colors.primary,
   },
   logDelete: {
-    marginLeft: 8,
     padding: 4,
-  },
-  logDeleteText: {
-    fontSize: 16,
   },
   logEdit: {
     marginLeft: 'auto',
     padding: 4,
   },
-  logEditText: {
-    fontSize: 15,
-  },
   logNote: {
-    fontSize: 15,
-    color: '#333',
-    marginBottom: 8,
-    lineHeight: 20,
+    ...type.body,
+    fontSize: 14,
+    color: colors.text,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
   },
   logMeta: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.sm,
     marginBottom: 4,
   },
   logCost: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#e67e22',
+    fontFamily: fonts.bodyBold,
+    fontSize: 13,
+    color: colors.secondary,
   },
   logVendor: {
-    fontSize: 13,
-    color: '#007AFF',
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textBody,
   },
   logRepairman: {
-    fontSize: 13,
-    color: '#555',
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.textBody,
   },
   logPayment: {
-    fontSize: 13,
-    color: '#8e44ad',
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.muted,
   },
   logNextService: {
-    fontSize: 13,
-    color: '#f39c12',
-    fontWeight: '600',
+    fontFamily: fonts.bodySemibold,
+    fontSize: 12,
+    color: colors.primary,
   },
   logContact: {
-    fontSize: 13,
-    color: '#777',
+    fontFamily: fonts.body,
+    fontSize: 12,
+    color: colors.muted,
     marginTop: 2,
   },
   photo: {
     width: '100%',
     height: 180,
-    borderRadius: 8,
-    marginTop: 8,
-    backgroundColor: '#eee',
+    borderRadius: radii.md,
+    marginTop: spacing.sm,
+    backgroundColor: colors.row,
   },
   empty: {
     alignItems: 'center',
-    marginTop: 40,
+    paddingVertical: spacing.xxl,
+    paddingHorizontal: spacing.lg,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#999',
+    ...type.h3,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#bbb',
-    marginTop: 4,
+    ...type.small,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
   errorBanner: {
-    backgroundColor: '#fff3f3',
-    borderRadius: 10,
-    marginHorizontal: 16,
-    marginBottom: 8,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radii.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#f5c6c6',
+    borderColor: colors.dangerBorder,
   },
   errorBannerText: {
-    color: '#c0392b',
-    fontSize: 13,
-    lineHeight: 18,
+    ...type.small,
+    color: colors.danger,
   },
-  fab: {
+  fabWrap: {
     position: 'absolute',
-    right: 20,
-    bottom: 20,
+    right: spacing.lg,
+    bottom: spacing.lg,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: '#007AFF',
+    borderRadius: radii.full,
+    ...shadows.medium,
+  },
+  fab: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#007AFF',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
   },
-  fabText: {
-    fontSize: 28,
-    color: '#fff',
-    lineHeight: 30,
+  fabHover: {
+    backgroundColor: colors.primaryDark,
   },
 });
